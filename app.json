@@ -12,19 +12,46 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAMrZcdv1lkWnu_e8g-0HyM4WGpsVdI0bg"
+        }
+      },
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "ios": {
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyAMrZcdv1lkWnu_e8g-0HyM4WGpsVdI0bg"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Run Pilot necesita tu ubicacion para mostrar tu posicion en el mapa.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Run Pilot necesita tu ubicacion para el servicio de conductor."
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Run Pilot necesita tu ubicacion para mostrar tu posicion en el mapa.",
+          "locationAlwaysAndWhenInUsePermission": "Run Pilot necesita tu ubicacion para el servicio de conductor."
+        }
+      ]
+    ]
   }
 }
