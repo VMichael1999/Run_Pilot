@@ -27,6 +27,8 @@ export type ConductorStackParamList = {
   Billetera: undefined;
   ServiciosProgramados: undefined;
   SeleccionarVehiculo: undefined;
+  /** Solo en desarrollo. */
+  Catalogo: undefined;
 };
 
 export type LoginProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;

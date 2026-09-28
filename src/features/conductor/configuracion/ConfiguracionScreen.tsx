@@ -3,9 +3,10 @@ import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
-import { AppHeader, AppSectionTitle, Segmented } from '@shared/components/ui';
+import { AppButton, AppHeader, AppSectionTitle, Segmented } from '@shared/components/ui';
 import { useThemeStore, type ThemePreference } from '@store/useThemeStore';
 import { useAppTheme } from '@theme/useAppTheme';
+import { Palette } from '@theme/colors';
 import { Type } from '@theme/fonts';
 import { BorderRadius, Hit, Spacing } from '@theme/spacing';
 import appConfig from '../../../../app.json';
@@ -55,11 +56,20 @@ export function ConfiguracionScreen({ navigation }: Props) {
                 value={avisos}
                 onValueChange={setAvisos}
                 trackColor={{ false: theme.divider, true: theme.online }}
-                thumbColor="#FFFFFF"
+                thumbColor={Palette.white}
               />
             </View>
           </View>
         </View>
+
+        {__DEV__ && (
+          <AppButton
+            label="Catálogo de componentes (desarrollo)"
+            variant="ghost"
+            size="md"
+            onPress={() => navigation.navigate('Catalogo')}
+          />
+        )}
 
         <Text style={[Type.caption, styles.version, { color: theme.textMuted }]}>
           Run Pilot {appConfig.expo.version}
