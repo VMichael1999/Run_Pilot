@@ -47,6 +47,7 @@ export const ThemeColors = {
     digital:     '#2458C6',
     digitalSoft: '#E1E9F9',
     danger:      '#C8261B',
+    onDanger:    Palette.white,
     dangerSoft:  '#FBE3E0',
 
     // Mapa y graficos
@@ -85,6 +86,7 @@ export const ThemeColors = {
     digital:     '#8DB1F5',
     digitalSoft: '#1A2640',
     danger:      '#FF7A6E',
+    onDanger:    Palette.ink,
     dangerSoft:  '#3A1916',
 
     route:      Palette.lime,

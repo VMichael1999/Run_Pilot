@@ -15,3 +15,4 @@ export { CountdownRing } from './CountdownRing';
 export { RouteStops } from './RouteStops';
 export { SlideToConfirm } from './SlideToConfirm';
 export { Tag } from './Tag';
+export { SosButton, SOS_TELEFONO } from './SosButton';

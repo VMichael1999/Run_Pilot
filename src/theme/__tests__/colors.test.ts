@@ -27,6 +27,7 @@ const TEXT_PAIRS = [
   ['digital', 'digitalSoft'],
   ['danger', 'surface'],
   ['danger', 'dangerSoft'],
+  ['onDanger', 'danger'],
 ] as const;
 
 describe('ThemeColors', () => {

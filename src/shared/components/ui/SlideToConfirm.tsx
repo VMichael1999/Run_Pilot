@@ -30,6 +30,8 @@ interface Props {
   /** Etiqueta para lectores de pantalla (se confirma con doble toque). */
   accessibilityLabel?: string;
   disabled?: boolean;
+  /** signal: lima (aceptar un viaje). primary: tinta de dia / lima de noche (finalizar). */
+  tone?: 'signal' | 'primary';
   style?: StyleProp<ViewStyle>;
 }
 
@@ -37,8 +39,10 @@ interface Props {
  * Deslizar para confirmar. Evita toques accidentales en un bache para acciones
  * que no se deshacen (aceptar un viaje, finalizar y cobrar).
  */
-export function SlideToConfirm({ label, onConfirm, accessibilityLabel, disabled = false, style }: Props) {
+export function SlideToConfirm({ label, onConfirm, accessibilityLabel, disabled = false, tone = 'signal', style }: Props) {
   const theme = useAppTheme();
+  const bg = tone === 'signal' ? theme.signal : theme.primary;
+  const fg = tone === 'signal' ? theme.onSignal : theme.onPrimary;
   const reducedMotion = useReducedMotion();
   const [trackW, setTrackW] = useState(0);
   const x = useSharedValue(0);
@@ -108,19 +112,19 @@ export function SlideToConfirm({ label, onConfirm, accessibilityLabel, disabled 
         }}
         style={[
           styles.track,
-          { backgroundColor: theme.signal },
+          { backgroundColor: bg },
           disabled && styles.disabled,
           style,
         ]}
       >
         <Animated.Text
-          style={[Type.bodyStrong, styles.label, { color: theme.onSignal }, labelStyle]}
+          style={[Type.bodyStrong, styles.label, { color: fg }, labelStyle]}
           numberOfLines={1}
         >
           {label}
         </Animated.Text>
-        <Animated.View style={[styles.thumb, { backgroundColor: theme.onSignal }, thumbStyle]}>
-          <Ionicons name="arrow-forward" size={22} color={theme.signal} />
+        <Animated.View style={[styles.thumb, { backgroundColor: fg }, thumbStyle]}>
+          <Ionicons name="arrow-forward" size={22} color={bg} />
         </Animated.View>
       </View>
     </GestureDetector>
