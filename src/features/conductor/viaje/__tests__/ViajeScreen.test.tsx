@@ -65,25 +65,39 @@ afterEach(async () => {
 });
 
 describe('ViajeScreen', () => {
+  const deslizar = (label: string) =>
+    fireEvent(screen.getByLabelText(label), 'accessibilityAction', { nativeEvent: { actionName: 'activate' } });
+
   it.each([
-    ['aceptado', 'Recoge a Carlos', 'Ir al punto de recojo'],
-    ['en_camino', 'Recoge a Carlos', 'Llegué al punto de recojo'],
-    ['esperando', 'Esperando a Carlos', 'Iniciar viaje'],
-  ] as const)('%s: tarjeta "%s" y accion "%s"', async (estado, tarjeta, accion) => {
+    ['aceptado', 'Recoge a Carlos', 'Empezar a ir al punto de recojo'],
+    ['en_camino', 'Recoge a Carlos', 'Confirmar que llegaste al punto de recojo'],
+    ['esperando', 'Esperando a Carlos', 'El pasajero subió, iniciar viaje'],
+  ] as const)('%s: tarjeta "%s" y se avanza deslizando', async (estado, tarjeta, accion) => {
     await renderEn(estado);
     expect(screen.getByText(tarjeta)).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: accion }));
+    deslizar(accion);
     expect(useConductorStore.getState().estadoViaje).not.toBe(estado);
+  });
+
+  it('muestra pasajero, cobro y notas del recojo', async () => {
+    await renderEn('en_camino');
+    expect(screen.getByText('Carlos Ramírez')).toBeTruthy();
+    expect(screen.getByText('4.8 · 127 viajes')).toBeTruthy();
+    expect(screen.getByLabelText('cobra en efectivo: S/ 18.50')).toBeTruthy();
+    expect(screen.getByText('Frente al Banco de la Nación')).toBeTruthy();
+  });
+
+  it('esperando muestra la espera sin costo', async () => {
+    await renderEn('esperando');
+    expect(screen.getByLabelText('espera sin costo: 5:00')).toBeTruthy();
   });
 
   it('en viaje: destino, pasajero a bordo y deslizar para finalizar', async () => {
     await renderEn('iniciado');
     expect(screen.getByText('Destino')).toBeTruthy();
     expect(screen.getByText('Av. La Encalada 1388, Surco')).toBeTruthy();
-    expect(screen.getByText('Carlos R. a bordo')).toBeTruthy();
-    fireEvent(screen.getByLabelText('Finalizar viaje y pasar al cobro'), 'accessibilityAction', {
-      nativeEvent: { actionName: 'activate' },
-    });
+    expect(screen.getByText('Carlos Ramírez · a bordo')).toBeTruthy();
+    deslizar('Finalizar viaje y pasar al cobro');
     expect(useConductorStore.getState().estadoViaje).toBe('llegado');
   });
 
