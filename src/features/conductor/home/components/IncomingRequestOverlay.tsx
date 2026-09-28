@@ -1,24 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Dimensions,
-} from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Solicitud } from '@features/conductor/types';
 import { fetchRoute } from '@features/conductor/viaje/services/directionsService';
 import type { LatLng } from '@features/conductor/viaje/services/directionsService';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
-
-const { height: SCREEN_H } = Dimensions.get('window');
-const COUNTDOWN = 20;
+import { AvatarPasajero, CountdownRing, RouteStops, SlideToConfirm, Tag } from '@shared/components/ui';
+import { DestinationMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
+import { distanciaRutaKm } from '@shared/utils/geo';
+import { useAppTheme, useIsDark } from '@theme/useAppTheme';
+import { MapStyle } from '@theme/mapStyle';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Spacing } from '@theme/spacing';
+import { Duration, Spring } from '@theme/motion';
 
 interface Props {
   solicitud: Solicitud;
@@ -26,24 +23,27 @@ interface Props {
   onRechazar: () => void;
 }
 
+const esEfectivo = (metodo: string) => metodo.toLowerCase() === 'efectivo';
+
 export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Props) {
-  const insets   = useSafeAreaInsets();
-  const mapRef   = useRef<MapView>(null);
-  const cardAnim = useRef(new Animated.Value(400)).current;
+  const insets = useSafeAreaInsets();
+  const theme  = useAppTheme();
+  const isDark = useIsDark();
+  const mapRef = useRef<MapView>(null);
 
-  const [segundos,    setSegundos]    = useState(COUNTDOWN);
+  const limite = solicitud.tiempoLimiteSeg;
+  const [segundos,    setSegundos]    = useState(limite);
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
+  const [cardH,       setCardH]       = useState(0);
 
-  const origen  = solicitud.paradas.find((p) => p.esOrigen);
-  const destino = solicitud.paradas.find((p) => !p.esOrigen);
+  const origen   = solicitud.paradas.find((p) => p.esOrigen);
+  const destino  = solicitud.paradas.find((p) => !p.esOrigen);
+  const pasajero = solicitud.pasajero;
 
   useEffect(() => {
-    // Slide card up
-    Animated.spring(cardAnim, {
-      toValue: 0, useNativeDriver: true, bounciness: 4, speed: 14,
-    }).start();
+    // Llega un viaje: aviso fisico para no tener que estar mirando
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
-    // Countdown
     const interval = setInterval(() => {
       setSegundos((s) => {
         if (s <= 1) { clearInterval(interval); return 0; }
@@ -51,320 +51,211 @@ export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Pro
       });
     }, 1000);
 
-    // Fetch route
+    let cancelado = false;
     if (origen && destino) {
       fetchRoute(origen.coordenadas, destino.coordenadas).then((coords) => {
-        setRouteCoords(coords);
-        if (coords.length > 1) {
-          const lats = coords.map((c) => c.latitude);
-          const lngs = coords.map((c) => c.longitude);
-          const latDelta = (Math.max(...lats) - Math.min(...lats)) * 1.6 + 0.06;
-          const lngDelta = (Math.max(...lngs) - Math.min(...lngs)) * 1.6 + 0.06;
-          const centerLat = (Math.max(...lats) + Math.min(...lats)) / 2;
-          const centerLng = (Math.max(...lngs) + Math.min(...lngs)) / 2;
-          // Desplazar el centro hacia abajo para que la ruta quede en la zona visible sobre la card
-          mapRef.current?.animateToRegion({
-            latitude:      centerLat - latDelta * 0.22,
-            longitude:     centerLng,
-            latitudeDelta:  latDelta,
-            longitudeDelta: lngDelta,
-          }, 700);
-        }
+        if (!cancelado) setRouteCoords(coords);
       });
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelado = true;
+      clearInterval(interval);
+    };
   }, []);
 
-  // Llamar onRechazar fuera del render, cuando el countdown llega a 0
+  // Encuadrar la ruta en la parte visible, encima de la tarjeta
   useEffect(() => {
-    if (segundos === 0) onRechazar();
+    const puntos = routeCoords.length > 1
+      ? routeCoords
+      : [origen?.coordenadas, destino?.coordenadas].filter((c): c is LatLng => !!c);
+    if (puntos.length < 2 || cardH === 0) return;
+    mapRef.current?.fitToCoordinates(puntos, {
+      edgePadding: { top: insets.top + 48, right: 48, bottom: cardH + 32, left: 48 },
+      animated: true,
+    });
+  }, [routeCoords, cardH]);
+
+  // Al llegar a 0 la solicitud se pierde: se avisa y se cierra
+  useEffect(() => {
+    if (segundos !== 0) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    onRechazar();
   }, [segundos]);
 
-  const mapRegion = origen && destino ? (() => {
-    const latDelta = Math.abs(origen.coordenadas.latitude  - destino.coordenadas.latitude)  * 1.6 + 0.06;
-    const lngDelta = Math.abs(origen.coordenadas.longitude - destino.coordenadas.longitude) * 1.6 + 0.06;
-    const centerLat = (origen.coordenadas.latitude  + destino.coordenadas.latitude)  / 2;
-    const centerLng = (origen.coordenadas.longitude + destino.coordenadas.longitude) / 2;
-    return {
-      latitude:      centerLat - latDelta * 0.22,
-      longitude:     centerLng,
-      latitudeDelta:  latDelta,
-      longitudeDelta: lngDelta,
-    };
-  })() : undefined;
+  const kmViaje = routeCoords.length > 1 ? distanciaRutaKm(routeCoords) : undefined;
+  const detalleDestino = [
+    kmViaje !== undefined ? `${kmViaje.toFixed(1)} km` : undefined,
+    destino?.duracionMin ? `${destino.duracionMin} min de viaje` : undefined,
+  ].filter(Boolean).join(' · ');
+
+  const recojo = [
+    origen?.duracionMin ? `Recojo a ${origen.duracionMin} min` : undefined,
+    origen?.distanciaKm ? `${origen.distanciaKm} km` : undefined,
+  ];
 
   return (
     <View style={StyleSheet.absoluteFillObject}>
-
-      {/* Mapa pantalla completa */}
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
-        initialRegion={mapRegion}
+        customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
+        initialRegion={
+          origen
+            ? { ...origen.coordenadas, latitudeDelta: 0.05, longitudeDelta: 0.05 }
+            : undefined
+        }
         scrollEnabled={false}
         pitchEnabled={false}
         rotateEnabled={false}
+        zoomEnabled={false}
+        toolbarEnabled={false}
         showsUserLocation
+        importantForAccessibility="no-hide-descendants"
       >
-        {/* Marker origen: circulo azul con persona */}
-        {origen && (
-          <Marker coordinate={origen.coordenadas} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={styles.markerOrigen}>
-              <View style={styles.markerDestinoDot} />
-            </View>
-          </Marker>
-        )}
-
-        {/* Marker destino: cuadro negro */}
-        {destino && (
-          <Marker coordinate={destino.coordenadas} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={styles.markerDestino}>
-              <View style={styles.markerDestinoDot} />
-            </View>
-          </Marker>
-        )}
-
+        {origen && <PickupMarker coordinate={origen.coordenadas} />}
+        {destino && <DestinationMarker coordinate={destino.coordenadas} />}
         {routeCoords.length > 1 && (
-          <Polyline
-            coordinates={routeCoords}
-            strokeColor={Colors.textPrimary}
-            strokeWidth={5}
-          />
+          <Polyline coordinates={routeCoords} strokeColor={theme.route} strokeWidth={5} />
         )}
       </MapView>
 
-      {/* Card flotante */}
+      {/* El mapa se atenua para que la tarjeta sea lo unico importante */}
       <Animated.View
+        entering={FadeIn.duration(Duration.base)}
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.scrim }]}
+        pointerEvents="none"
+      />
+
+      <Animated.View
+        entering={SlideInDown.springify()
+          .damping(Spring.sheet.damping)
+          .stiffness(Spring.sheet.stiffness)
+          .mass(Spring.sheet.mass)}
+        onLayout={(e) => setCardH(e.nativeEvent.layout.height)}
+        accessibilityViewIsModal
         style={[
           styles.card,
-          { bottom: insets.bottom + Spacing.lg, transform: [{ translateY: cardAnim }] },
+          { backgroundColor: theme.surface, paddingBottom: insets.bottom + Spacing.xl + 2 },
         ]}
       >
-        {/* Fila superior */}
-        <View style={styles.topRow}>
-          <View style={styles.topLeft}>
-            <View style={styles.tipoPill}>
-              <Ionicons name="person" size={11} color={Colors.white} />
-              <Text style={styles.tipoText}>RunX</Text>
-            </View>
-            <View style={styles.exclusivoPill}>
-              <Text style={styles.exclusivoText}>Exclusivo</Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-            <View style={styles.timerBadge}>
-              <Text style={styles.timerNumText}>{segundos}s</Text>
-            </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={onRechazar} activeOpacity={0.75}>
-              <Ionicons name="close" size={18} color={Colors.textSecondary} />
-            </TouchableOpacity>
+        <View style={styles.top}>
+          <CountdownRing segundos={segundos} total={limite} />
+          <View style={styles.tags}>
+            <Tag label="RunX" />
+            <Tag
+              label={solicitud.metodoPago}
+              tone={esEfectivo(solicitud.metodoPago) ? 'cash' : 'digital'}
+            />
           </View>
         </View>
 
-        {/* Precio */}
-        <View style={styles.precioRow}>
-          <Text style={styles.precio}>{solicitud.simboloMoneda} {solicitud.precio.toFixed(2)}</Text>
-          <Ionicons name="flash" size={22} color={Colors.warning} style={{ marginTop: 10 }} />
+        <View style={styles.figures}>
+          <Text
+            style={[styles.price, { color: theme.text }]}
+            accessibilityLabel={`Tarifa ${solicitud.simboloMoneda} ${solicitud.precio.toFixed(2)}`}
+          >
+            <Text style={Type.currency}>{solicitud.simboloMoneda} </Text>
+            {solicitud.precio.toFixed(2)}
+          </Text>
+          {(recojo[0] || recojo[1]) && (
+            <Text style={[styles.eta, { color: theme.text }]}>
+              {recojo[0]}
+              {recojo[1] ? (
+                <Text style={[styles.etaMuted, { color: theme.textMuted }]}>
+                  {recojo[0] ? ' · ' : ''}{recojo[1]}
+                </Text>
+              ) : null}
+            </Text>
+          )}
         </View>
 
-        {/* Rating + Verificado */}
-        <View style={styles.ratingRow}>
-          <Ionicons name="star" size={14} color={Colors.warning} />
-          <Text style={styles.ratingNum}>{solicitud.pasajero.calificacion.toFixed(2)}</Text>
-          <View style={styles.verificadoBadge}>
-            <Ionicons name="checkmark-circle" size={15} color='#3B82F6' />
-            <Text style={styles.verificadoText}>Verificado</Text>
-          </View>
-        </View>
+        {origen && destino && (
+          <RouteStops
+            origen={{ direccion: origen.direccion, detalle: origen.notas }}
+            destino={{ direccion: destino.direccion, detalle: detalleDestino || undefined }}
+          />
+        )}
 
-        <View style={styles.divider} />
-
-        {/* Ruta */}
-        <View style={styles.rutaContainer}>
-          <View style={styles.rutaLineas}>
-            <View style={styles.dotTop} />
-            <View style={styles.lineaV} />
-            <View style={styles.dotBottom} />
-          </View>
-          <View style={styles.rutaTextos}>
-            <View style={styles.rutaItem}>
-              <Text style={styles.rutaTiempo}>
-                {origen?.duracionMin ?? '--'} min ({origen?.distanciaKm ?? '--'} km) de distancia
+        <View style={styles.pax}>
+          <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={40} />
+          <View>
+            <Text style={[Type.label, { color: theme.text }]}>
+              {pasajero.nombre} {pasajero.apellido.charAt(0)}.
+            </Text>
+            <View style={styles.rating}>
+              <Ionicons name="star" size={12} color={theme.textMuted} />
+              <Text style={[Type.detail, { color: theme.textMuted }]}>
+                {pasajero.calificacion.toFixed(1)} · {pasajero.totalViajes} viajes
               </Text>
-              <Text style={styles.rutaDireccion} numberOfLines={1}>{origen?.direccion}</Text>
-            </View>
-            <View style={styles.rutaItem}>
-              <Text style={styles.rutaTiempo}>
-                {destino?.duracionMin ?? '--'} min de viaje
-              </Text>
-              <Text style={styles.rutaDireccion} numberOfLines={1}>{destino?.direccion}</Text>
             </View>
           </View>
         </View>
 
-        {/* Boton Aceptar */}
-        <TouchableOpacity style={styles.aceptarBtn} onPress={onAceptar} activeOpacity={0.88}>
-          <Text style={styles.aceptarText}>Aceptar</Text>
-        </TouchableOpacity>
+        {/* Rechazar queda separado y es un toque; aceptar exige deslizar */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Rechazar viaje"
+            onPress={onRechazar}
+            activeOpacity={0.7}
+            style={[styles.reject, { borderColor: theme.divider }]}
+          >
+            <Text style={[Type.bodyStrong, { color: theme.textMuted }]}>Rechazar</Text>
+          </TouchableOpacity>
+          <SlideToConfirm
+            label="Desliza para aceptar"
+            accessibilityLabel={`Aceptar viaje por ${solicitud.simboloMoneda} ${solicitud.precio.toFixed(2)}`}
+            onConfirm={onAceptar}
+            style={styles.flex}
+          />
+        </View>
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
-  /* Markers */
-  markerOrigen: {
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: Colors.textPrimary,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2.5, borderColor: Colors.white,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35, shadowRadius: 4,
-    elevation: 5,
-  },
-  markerDestino: {
-    width: 26, height: 26, borderRadius: 5,
-    backgroundColor: Colors.textPrimary,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2.5, borderColor: Colors.white,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35, shadowRadius: 4,
-    elevation: 5,
-  },
-  markerDestinoDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.white,
-  },
-
-  /* Card flotante — bordes redondeados en los 4 lados */
+  flex: { flex: 1 },
   card: {
     position: 'absolute',
-    left: Spacing.lg,
-    right: Spacing.lg,
-    backgroundColor: Colors.white,
-    borderRadius: 20,
-    padding: Spacing.lg,
-    ...Shadow.lg,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    paddingTop: 14,
+    paddingHorizontal: 18,
+    gap: 14,
   },
-
-  /* Top */
-  topRow: {
+  top: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.xs,
   },
-  topLeft: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
+  tags: { flexDirection: 'row', gap: 6 },
+  figures: { gap: 6 },
+  price: { ...Type.price },
+  eta: {
+    fontFamily: FontFamily.semibold,
+    fontSize: 15,
+    lineHeight: 20,
   },
-  tipoPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: Colors.textPrimary,
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: 10, paddingVertical: 5,
-  },
-  tipoText: {
-    fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: Colors.white,
-  },
-  exclusivoPill: {
-    borderWidth: 1.5, borderColor: '#3B82F6',
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: 8, paddingVertical: 4,
-  },
-  exclusivoText: {
-    fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: '#3B82F6',
-  },
-  timerBadge: {
-    backgroundColor: '#f0f2f5',
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: Spacing.sm, paddingVertical: 3,
-  },
-  timerNumText: {
-    fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: Colors.textSecondary,
-  },
-  closeBtn: {
-    width: 36, height: 36,
-    borderRadius: BorderRadius.md,
-    backgroundColor: '#f0f2f5',
-    alignItems: 'center', justifyContent: 'center',
-  },
-
-  /* Precio */
-  precioRow: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    gap: Spacing.xs, marginBottom: Spacing.xs,
-    marginTop: Spacing.sm,
-  },
-  precio: {
-    fontFamily: FontFamily.bold, fontSize: 44,
-    color: Colors.textPrimary, letterSpacing: -1, lineHeight: 52,
-  },
-
-  /* Rating */
-  ratingRow: {
-    flexDirection: 'row', alignItems: 'center',
-    gap: 6, marginBottom: Spacing.md,
-  },
-  ratingNum: {
-    fontFamily: FontFamily.bold, fontSize: FontSize.sm, color: Colors.textPrimary,
-  },
-  verificadoBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#EFF6FF',
-    borderRadius: BorderRadius.sm,
-    paddingHorizontal: 8, paddingVertical: 3,
-  },
-  verificadoText: {
-    fontFamily: FontFamily.regular, fontSize: FontSize.sm, color: '#3B82F6',
-  },
-
-  divider: {
-    height: 1, backgroundColor: Colors.divider, marginBottom: Spacing.md,
-  },
-
-  /* Ruta */
-  rutaContainer: {
-    flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.lg,
-  },
-  rutaLineas: {
-    alignItems: 'center', paddingTop: 4, width: 16,
-  },
-  dotTop: {
-    width: 10, height: 10, borderRadius: 5,
-    borderWidth: 2, borderColor: Colors.textPrimary,
-    backgroundColor: Colors.white,
-  },
-  lineaV: {
-    width: 2, flex: 1, minHeight: 24,
-    backgroundColor: Colors.divider, marginVertical: 3,
-  },
-  dotBottom: {
-    width: 10, height: 10, borderRadius: 2,
-    backgroundColor: Colors.textPrimary,
-  },
-  rutaTextos: { flex: 1, gap: Spacing.md },
-  rutaItem: { gap: 2 },
-  rutaTiempo: {
-    fontFamily: FontFamily.bold, fontSize: FontSize.sm, color: Colors.textPrimary,
-  },
-  rutaDireccion: {
-    fontFamily: FontFamily.regular, fontSize: FontSize.xs, color: Colors.textSecondary,
-  },
-
-  /* Boton */
-  aceptarBtn: {
-    backgroundColor: '#3B82F6',
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md + 4,
+  etaMuted: { fontFamily: FontFamily.medium },
+  pax: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  actions: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.sm + 2,
   },
-  aceptarText: {
-    fontFamily: FontFamily.bold, fontSize: FontSize.md,
-    color: Colors.white, letterSpacing: 0.3,
+  reject: {
+    height: 60,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

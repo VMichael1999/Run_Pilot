@@ -11,3 +11,7 @@ export { MapButton } from './MapButton';
 export { MapPill } from './MapPill';
 export { Plate } from './Plate';
 export { StatusDot } from './StatusDot';
+export { CountdownRing } from './CountdownRing';
+export { RouteStops } from './RouteStops';
+export { SlideToConfirm } from './SlideToConfirm';
+export { Tag } from './Tag';

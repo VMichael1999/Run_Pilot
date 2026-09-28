@@ -6,6 +6,8 @@
 | useAuthStore | pendiente | sin tests |
 | useThemeStore | src/store/__tests__/useThemeStore.test.ts | 5 tests, en verde |
 | ConductorHomeScreen | src/features/conductor/home/__tests__/ConductorHomeScreen.test.tsx | 3 tests (render), en verde |
+| IncomingRequestOverlay | src/features/conductor/home/__tests__/IncomingRequestOverlay.test.tsx | 4 tests (render, rechazar, aceptar accesible, expira), en verde |
+| geo (distancia de ruta) | src/shared/utils/__tests__/geo.test.ts | 3 tests, en verde |
 | format (soles, viajes, tiempo) | src/shared/utils/__tests__/format.test.ts | 9 tests, en verde |
 | LoginScreen | pendiente | sin tests |
 | LoginVerificacionScreen | pendiente | sin tests |
