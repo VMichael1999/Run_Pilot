@@ -17,7 +17,9 @@ import { IncomingRequestOverlay } from './components/IncomingRequestOverlay';
 import { ViajeEnCursoBanner } from './components/ViajeEnCursoBanner';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { mockConductor } from '../data/mockConductor';
-import { mockBilletera } from '../data/mockIngresos';
+import { periodoHoy, viajesConGanancia } from '../ingresos/resumen';
+import { useSaldoBilletera } from '../billetera/saldo';
+import { useVehiculoActivo } from '../vehiculo/useVehiculoActivo';
 import type { Solicitud } from '../types';
 import type { LatLng } from '../viaje/services/directionsService';
 import { AppButton, InfoNote, MapButton, MapPill, Plate, StatusDot } from '@shared/components/ui';
@@ -166,15 +168,12 @@ export function ConductorHomeScreen() {
     return () => clearInterval(iv);
   }, [isOnline]);
 
-  // "Hoy S/ … · N viajes": ambos del historial de hoy para que sean coherentes
-  const hoy = useMemo(() => {
-    const desde = inicioDelDia();
-    const viajes = historial.filter((v) => v.fechaMs >= desde);
-    return { total: viajes.reduce((acc, v) => acc + v.solicitud.precio, 0), viajes: viajes.length };
-  }, [historial]);
+  // "Hoy S/ … · N viajes": ganancia neta de hoy, la misma que muestra Ingresos
+  const hoy = useMemo(() => periodoHoy(viajesConGanancia(historial, mockConductor.comision)), [historial]);
+  const saldo = useSaldoBilletera();
 
   const [panelH, setPanelH] = useState(0);
-  const { vehiculo } = mockConductor;
+  const vehiculo = useVehiculoActivo();
 
   // Se navega cuando el menu termino de cerrarse
   const nav = (screen: keyof ConductorStackParamList) => {
@@ -184,7 +183,7 @@ export function ConductorHomeScreen() {
 
   const drawerItems: DrawerMenuItem[] = [
     { label: 'Tablero de solicitudes', icono: 'list-outline',     onPress: () => nav('Solicitudes') },
-    { label: 'Billetera',              icono: 'wallet-outline',   badge: formatSoles(mockBilletera.saldo), onPress: () => nav('Billetera') },
+    { label: 'Billetera',              icono: 'wallet-outline',   badge: formatSoles(saldo), onPress: () => nav('Billetera') },
     { label: 'Servicios programados',  icono: 'calendar-outline', onPress: () => nav('ServiciosProgramados') },
     { label: 'Ingresos',               icono: 'cash-outline',     onPress: () => nav('Ingresos') },
     { label: 'Experiencia',            icono: 'star-outline',     onPress: () => nav('Experiencia') },

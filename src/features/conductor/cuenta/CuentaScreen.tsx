@@ -13,6 +13,7 @@ import { useAppTheme } from '@theme/useAppTheme';
 import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
+import { useVehiculoActivo } from '../vehiculo/useVehiculoActivo';
 
 type Nav = NativeStackNavigationProp<ConductorStackParamList>;
 
@@ -24,7 +25,7 @@ export function CuentaScreen() {
   const countryCode = useAuthStore((s) => s.countryCode);
   const logout = useAuthStore((s) => s.logout);
   const c = mockConductor;
-  const v = c.vehiculo;
+  const v = useVehiculoActivo();
 
   const chevron = <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />;
   const icono = (name: keyof typeof Ionicons.glyphMap, color = theme.text) => (

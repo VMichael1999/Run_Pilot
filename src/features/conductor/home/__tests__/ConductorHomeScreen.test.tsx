@@ -31,7 +31,7 @@ jest.mock('../components/IncomingRequestOverlay', () => ({ IncomingRequestOverla
 beforeEach(() => {
   jest.useFakeTimers();
   mockNavigate.mockClear();
-  useConductorStore.setState({ isOnline: false, historial: [], solicitudActual: null, estadoViaje: null, esperandoDesde: null });
+  useConductorStore.setState({ isOnline: false, historial: [], solicitudActual: null, estadoViaje: null, esperandoDesde: null, vehiculoId: 'veh-1' });
 });
 afterEach(() => jest.useRealTimers());
 
@@ -68,6 +68,19 @@ describe('ConductorHomeScreen', () => {
     await act(async () => {});
     fireEvent.press(screen.getByLabelText(/Cambiar vehículo/));
     expect(mockNavigate).toHaveBeenCalledWith('SeleccionarVehiculo');
+  });
+});
+
+describe('ConductorHomeScreen · datos coherentes', () => {
+  it('"Hoy" suma la ganancia neta y el vehiculo es el elegido', async () => {
+    useConductorStore.setState({
+      vehiculoId: 'veh-2',
+      historial: [{ id: 'x', fechaMs: Date.now() - 60_000, solicitud: mockSolicitudes[0], calificacion: 0 }],
+    });
+    render(<ConductorHomeScreen />);
+    await act(async () => {});
+    expect(screen.getByLabelText('Hoy llevas S/ 15.72 en 1 viaje')).toBeTruthy();
+    expect(screen.getByText('CMT-394')).toBeTruthy();
   });
 });
 

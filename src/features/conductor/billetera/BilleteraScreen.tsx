@@ -13,6 +13,7 @@ import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
 import { mockBilletera } from '../data/mockIngresos';
 import { MovRow } from '../ingresos/components/MovRow';
+import { useSaldoBilletera } from './saldo';
 import { viajesConGanancia } from '../ingresos/resumen';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Billetera'>;
@@ -48,7 +49,7 @@ export function BilleteraScreen({ navigation }: Props) {
     return [...deViajes, ...otros].sort((a, b) => b.fechaMs - a.fechaMs);
   }, [historial]);
 
-  const saldo = mockBilletera.saldo;
+  const saldo = useSaldoBilletera();
   // Bloque de saldo invertido: tinta de dia, claro de noche (como el logo)
   const bg = theme.text;
   const fg = theme.surface;

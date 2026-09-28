@@ -9,15 +9,7 @@ export const mockConductor = {
   totalViajes: 1208,
   /** Zona donde empezara a recibir viajes. */
   zona: 'San Isidro',
-  vehiculo: {
-    id: 'veh-1',
-    placa: 'BKL-482',
-    marca: 'Toyota',
-    modelo: 'Yaris',
-    color: 'gris',
-    anio: 2021,
-  },
-  /** Vehiculos registrados; el primero es el activo. */
+  /** Vehiculos registrados; el primero es el activo al iniciar. El elegido vive en el store. */
   vehiculos: [
     { id: 'veh-1', placa: 'BKL-482', marca: 'Toyota', modelo: 'Yaris', color: 'gris', anio: 2021 },
     { id: 'veh-2', placa: 'CMT-394', marca: 'Kia', modelo: 'Rio', color: 'blanco', anio: 2020 },
