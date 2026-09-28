@@ -17,7 +17,7 @@ import type { AuthStackParamList } from '@navigation/types';
 import { useAuthStore } from '@store/useAuthStore';
 import { AppButton } from '@shared/components/ui';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;

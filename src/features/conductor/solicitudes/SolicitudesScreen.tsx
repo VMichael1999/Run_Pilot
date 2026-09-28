@@ -11,7 +11,7 @@ import { AppButton, AppHeader, RouteStops, Tag } from '@shared/components/ui';
 import { esEfectivo } from '@shared/utils/cobro';
 import { formatSoles } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 
 type Nav = NativeStackNavigationProp<ConductorStackParamList>;

@@ -20,7 +20,7 @@ import { RoutePolyline } from '@shared/components/map/RoutePolyline';
 import { distanciaRutaKm, formatDistancia, restanteEnRutaKm } from '@shared/utils/geo';
 import { useAppTheme } from '@theme/useAppTheme';
 import { useMapStyle } from '@shared/components/map/mapStyle';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { Spacing, BorderRadius, Hit, HitSlop, Shadow } from '@theme/spacing';
 import { Duration, Timing } from '@theme/motion';
 

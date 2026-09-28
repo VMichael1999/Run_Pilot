@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 
 interface Props {
@@ -50,5 +50,5 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   text: { ...Type.small },
-  textOn: { fontFamily: FontFamily.semibold },
+  textOn: { fontWeight: Weight.semibold },
 });

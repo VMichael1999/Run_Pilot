@@ -16,7 +16,7 @@ import { formatSoles } from '@shared/utils/format';
 import { distanciaRutaKm } from '@shared/utils/geo';
 import { useAppTheme } from '@theme/useAppTheme';
 import { useMapStyle } from '@shared/components/map/mapStyle';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
 
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   rowSep: { borderTopWidth: 1 },
   rowText: { flex: 1, ...Type.row },
   // Cifras y el total en negrita; los conceptos en regular
-  rowStrong: { ...Type.label, fontFamily: FontFamily.bold },
+  rowStrong: { ...Type.label, fontWeight: Weight.bold },
   total: { fontSize: Type.heading.fontSize, lineHeight: Type.heading.lineHeight },
   missing: { paddingHorizontal: 18, gap: Spacing.sm, paddingTop: Spacing.xl },
 });

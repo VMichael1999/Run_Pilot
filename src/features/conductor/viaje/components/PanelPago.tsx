@@ -9,7 +9,7 @@ import { AppButton, Price } from '@shared/components/ui';
 import { formatSoles } from '@shared/utils/format';
 import { desgloseCobro, distritoDe, esEfectivo } from '@shared/utils/cobro';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Hit, Spacing } from '@theme/spacing';
 import { Duration } from '@theme/motion';
 
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   rowSep: { borderTopWidth: 1 },
   rowText: { flex: 1, ...Type.row },
   // Cifras y el total en negrita; los conceptos en regular
-  rowVal: { ...Type.label, fontFamily: FontFamily.bold },
+  rowVal: { ...Type.label, fontWeight: Weight.bold },
   total: { fontSize: Type.heading.fontSize, lineHeight: Type.heading.lineHeight },
   textBtn: { minHeight: Hit.min, alignItems: 'center', justifyContent: 'center' },
   underline: { textDecorationLine: 'underline' },

@@ -15,7 +15,7 @@ import { useAuthStore } from '@store/useAuthStore';
 import type { LoginVerificacionProps } from '@navigation/types';
 import { formatTelefono } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Hit, HitSlop, Spacing } from '@theme/spacing';
 
 const RESEND_SECONDS = 30;
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   cursor: { width: 2, height: 28, borderRadius: 1 },
   feedback: { minHeight: Hit.min, justifyContent: 'center' },
   timerRow: { flexDirection: 'row', alignItems: 'baseline' },
-  timer: { fontFamily: FontFamily.semibold, minWidth: 34 },
+  timer: { fontWeight: Weight.semibold, minWidth: 34 },
   resendBtn: { minHeight: Hit.min, justifyContent: 'center', alignSelf: 'flex-start' },
   resend: { ...Type.label, textDecorationLine: 'underline' },
   keypad: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { useAppTheme, useIsDark } from '@theme/useAppTheme';
-import { FontFamily } from '@theme/fonts';
+import { Weight } from '@theme/fonts';
 
 interface Props<T extends string> {
   options: { value: T; label: string }[];
@@ -55,7 +55,7 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
                 styles.label,
                 {
                   color: isSelected ? theme.text : theme.textMuted,
-                  fontFamily: isSelected ? FontFamily.semibold : FontFamily.medium,
+                  fontWeight: isSelected ? Weight.semibold : Weight.medium,
                 },
               ]}
             >

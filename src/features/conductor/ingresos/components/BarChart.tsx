@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily } from '@theme/fonts';
+import { Weight } from '@theme/fonts';
 import { formatSoles } from '@shared/utils/format';
 import type { Barra } from '../resumen';
 
@@ -62,7 +62,7 @@ export function BarChart({ barras }: { barras: Barra[] }) {
                 x={AXIS_W - 6}
                 y={y(g) + 3}
                 fontSize={10}
-                fontFamily={FontFamily.regular}
+                fontWeight={Weight.regular}
                 fill={theme.textMuted}
                 textAnchor="end"
               >
@@ -87,7 +87,7 @@ export function BarChart({ barras }: { barras: Barra[] }) {
                     x={cx}
                     y={top - 5}
                     fontSize={11}
-                    fontFamily={FontFamily.semibold}
+                    fontWeight={Weight.semibold}
                     fill={theme.text}
                     textAnchor="middle"
                   >
@@ -98,7 +98,7 @@ export function BarChart({ barras }: { barras: Barra[] }) {
                   x={cx}
                   y={H - 6}
                   fontSize={11}
-                  fontFamily={FontFamily.semibold}
+                  fontWeight={Weight.semibold}
                   fill={b.esActual ? theme.text : theme.textMuted}
                   textAnchor="middle"
                 >

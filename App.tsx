@@ -2,14 +2,13 @@ import React from 'react';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { FontAssets, useAppTheme, useIsDark } from './src/theme';
+import { useAppTheme, useIsDark } from './src/theme';
 import { useThemeStore } from './src/store/useThemeStore';
 
-// El splash nativo (logo sobre negro) queda visible hasta tener fuentes y tema.
+// El splash nativo (logo sobre negro) queda visible hasta cargar el tema guardado.
 void SplashScreen.preventAutoHideAsync();
 
 export default function App() {
@@ -18,9 +17,8 @@ export default function App() {
   const hasHydrated = useThemeStore((state) => state.hasHydrated);
   const loadTheme = useThemeStore((state) => state.loadTheme);
 
-  // Si una fuente falla se sigue con la del sistema en lugar de quedarse en el splash.
-  const [fontsLoaded, fontError] = useFonts(FontAssets);
-  const ready = (fontsLoaded || fontError !== null) && hasHydrated;
+  // Se usa la letra del sistema: no hay fuentes que esperar, solo el tema guardado.
+  const ready = hasHydrated;
 
   React.useEffect(() => {
     void loadTheme();

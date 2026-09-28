@@ -8,7 +8,7 @@ import { esEfectivo } from '@shared/utils/cobro';
 import { hora, tituloDia } from '@shared/utils/fecha';
 import { formatSoles, inicioDelDia } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockServicios, type EstadoServicio, type ServicioProgramado } from '../data/mockServicios';
 
@@ -104,6 +104,6 @@ const styles = StyleSheet.create({
   card: { borderRadius: BorderRadius.lg, borderWidth: 1, padding: 14, gap: Spacing.sm + 2 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  precio: { ...Type.heading, fontFamily: FontFamily.bold },
+  precio: { ...Type.heading, fontWeight: Weight.bold },
   empty: { gap: Spacing.sm, paddingTop: Spacing.xl },
 });

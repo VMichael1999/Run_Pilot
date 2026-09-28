@@ -2,6 +2,7 @@
 
 | Modulo | Archivo de test | Estado |
 |--------|----------------|--------|
+| Type (letra del sistema, pesos por rol) | src/theme/__tests__/fonts.test.ts | 3 tests, en verde |
 | ThemeColors (roles y contraste) | src/theme/__tests__/colors.test.ts | 27 tests, en verde |
 | useAuthStore | pendiente | sin tests (cubierto indirectamente por Login y Cuenta) |
 | useThemeStore | src/store/__tests__/useThemeStore.test.ts | 5 tests, en verde |

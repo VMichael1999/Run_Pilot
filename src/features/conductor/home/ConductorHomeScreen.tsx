@@ -24,7 +24,7 @@ import { formatSoles, haceTiempo, inicioDelDia, pluralViajes } from '@shared/uti
 import { confirmarCerrarSesion } from '@shared/utils/sesion';
 import { useAppTheme } from '@theme/useAppTheme';
 import { useMapStyle } from '@shared/components/map/mapStyle';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { Spacing, BorderRadius, Hit, Shadow } from '@theme/spacing';
 import { Duration } from '@theme/motion';
 
@@ -378,8 +378,8 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
   },
-  earnText: { ...Type.small, fontFamily: FontFamily.regular },
-  earnBold: { fontFamily: FontFamily.bold },
+  earnText: { ...Type.small, fontWeight: Weight.regular },
+  earnBold: { fontWeight: Weight.bold },
 
   panel: {
     position: 'absolute',
@@ -405,6 +405,6 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     minHeight: Hit.min,
   },
-  vehName: { fontFamily: FontFamily.semibold },
+  vehName: { fontWeight: Weight.semibold },
   link: { textDecorationLine: 'underline' },
 });

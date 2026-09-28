@@ -4,6 +4,7 @@ import { render } from '@testing-library/react-native';
 import { RoutePolyline } from '../RoutePolyline';
 import { useMapStyle } from '../mapStyle';
 import { useThemeStore } from '@store/useThemeStore';
+import { ThemeColors } from '@theme/colors';
 
 const mockPolyline = jest.fn();
 jest.mock('react-native-maps', () => ({
@@ -31,12 +32,13 @@ describe('RoutePolyline', () => {
     expect(linea).toMatchObject({ strokeColor: '#000000', strokeColors: ['#000000'], strokeWidth: 5 });
   });
 
-  it('noche: ruta verde con borde negro', () => {
+  it('noche: ruta en el lima de la marca (igual que el boton principal) con borde negro', () => {
     useThemeStore.setState({ preference: 'dark' });
     render(<RoutePolyline coordinates={ruta} />);
     const [borde, linea] = mockPolyline.mock.calls.map((c) => c[0]);
     expect(borde.strokeColor).toBe('#000000');
-    expect(linea.strokeColor).toBe('#3DCB7E');
+    expect(linea.strokeColor).toBe('#D4E838');
+    expect(linea.strokeColor).toBe(ThemeColors.dark.primary);
   });
 
   it('Android no recibe strokeColors: alli strokeColor funciona y la prop no existe', () => {
