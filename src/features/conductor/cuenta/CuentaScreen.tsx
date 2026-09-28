@@ -10,7 +10,7 @@ import { AppHeader, AppListRow, AppSectionTitle, Plate, Tag } from '@shared/comp
 import { formatTelefono, pluralViajes } from '@shared/utils/format';
 import { confirmarCerrarSesion } from '@shared/utils/sesion';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
 
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   perfil: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   av: { width: 64, height: 64, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   // Medida propia del avatar de 64 dp
-  avText: { fontFamily: FontFamily.bold, fontSize: 22 },
+  avText: { fontWeight: Weight.bold, fontSize: 22 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   group: { borderRadius: BorderRadius.lg, borderWidth: 1 },
   rowPad: { paddingHorizontal: 14 },

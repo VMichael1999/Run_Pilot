@@ -8,7 +8,7 @@ import { AppHeader, Price } from '@shared/components/ui';
 import { fechaCorta, nombreMes } from '@shared/utils/fecha';
 import { formatSoles } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
 import { mockBilletera } from '../data/mockIngresos';

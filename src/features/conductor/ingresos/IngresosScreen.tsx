@@ -8,7 +8,7 @@ import { AppButton, AppHeader, AppSectionTitle, Segmented } from '@shared/compon
 import { formatSoles, pluralViajes } from '@shared/utils/format';
 import { fechaCorta, nombreMes, rangoSemana } from '@shared/utils/fecha';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { Spacing } from '@theme/spacing';
 import { Duration } from '@theme/motion';
 import { mockConductor } from '../data/mockConductor';

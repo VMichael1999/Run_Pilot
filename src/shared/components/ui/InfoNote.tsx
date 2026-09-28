@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 
 interface Props {
@@ -39,5 +39,5 @@ const styles = StyleSheet.create({
     flex: 1,
     ...Type.note,
   },
-  bold: { fontFamily: FontFamily.semibold },
+  bold: { fontWeight: Weight.semibold },
 });

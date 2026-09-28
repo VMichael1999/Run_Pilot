@@ -8,7 +8,7 @@ import type { ConductorStackParamList } from '@navigation/types';
 import { useConductorStore } from '@store/useConductorStore';
 import { AppHeader, Plate, Tag } from '@shared/components/ui';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { Duration } from '@theme/motion';
 import { mockConductor } from '../data/mockConductor';

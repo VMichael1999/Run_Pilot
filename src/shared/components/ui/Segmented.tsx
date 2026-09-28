@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { useAppTheme, useIsDark } from '@theme/useAppTheme';
-import { FontFamily } from '@theme/fonts';
+import { Weight } from '@theme/fonts';
 
 interface Props<T extends string> {
   options: { value: T; label: string }[];
@@ -29,8 +29,8 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
         if (o) onChange(o.value);
       }}
       appearance={isDark ? 'dark' : 'light'}
-      fontStyle={{ fontFamily: FontFamily.medium, fontSize: 14, color: theme.textMuted }}
-      activeFontStyle={{ fontFamily: FontFamily.semibold, fontSize: 14, color: theme.text }}
+      fontStyle={{ fontWeight: Weight.medium, fontSize: 14, color: theme.textMuted }}
+      activeFontStyle={{ fontWeight: Weight.semibold, fontSize: 14, color: theme.text }}
       style={styles.seg}
     />
   );

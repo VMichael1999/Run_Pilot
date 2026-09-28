@@ -62,5 +62,5 @@ const styles = StyleSheet.create({
   line: { width: 2, flex: 1, minHeight: 18, marginBottom: -MARK_TOP },
   text: { flex: 1, gap: 1 },
   textGap: { paddingBottom: Spacing.sm + 2 },
-  addr: { fontFamily: Type.label.fontFamily },
+  addr: { fontWeight: Type.label.fontWeight },
 });

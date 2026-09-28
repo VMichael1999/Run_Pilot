@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Plate } from '@shared/components/ui';
 import { useAppTheme } from '@theme/useAppTheme';
 import { Palette } from '@theme/colors';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Hit, Spacing } from '@theme/spacing';
 import { Duration } from '@theme/motion';
 
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
   av: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   // Medida propia del avatar de 40 dp
-  avText: { fontFamily: FontFamily.bold, fontSize: 14 },
+  avText: { fontWeight: Weight.bold, fontSize: 14 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   veh: { ...Type.smallStrong },
   menu: { paddingBottom: Spacing.sm },

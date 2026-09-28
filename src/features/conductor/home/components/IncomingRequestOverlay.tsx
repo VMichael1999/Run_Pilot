@@ -15,7 +15,7 @@ import { distanciaRutaKm } from '@shared/utils/geo';
 import { esEfectivo } from '@shared/utils/cobro';
 import { useAppTheme } from '@theme/useAppTheme';
 import { useMapStyle } from '@shared/components/map/mapStyle';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { Duration, Spring } from '@theme/motion';
 
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   tags: { flexDirection: 'row', gap: 6 },
   figures: { gap: 6 },
   eta: { ...Type.bodyStrong },
-  etaMuted: { fontFamily: FontFamily.medium },
+  etaMuted: { fontWeight: Weight.medium },
   pax: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   actions: {

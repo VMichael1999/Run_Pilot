@@ -11,7 +11,7 @@ import { distritoDe, esEfectivo } from '@shared/utils/cobro';
 import { hora } from '@shared/utils/fecha';
 import { formatSoles, pluralViajes } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Hit, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
 import { agruparPorDia } from './agrupar';
@@ -165,6 +165,6 @@ const styles = StyleSheet.create({
   mini: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: BorderRadius.full },
   miniRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   calificar: { minHeight: Hit.min, minWidth: Hit.min, justifyContent: 'center', alignItems: 'flex-end' },
-  link: { ...Type.detail, fontFamily: FontFamily.semibold, textDecorationLine: 'underline' },
+  link: { ...Type.detail, fontWeight: Weight.semibold, textDecorationLine: 'underline' },
   empty: { gap: Spacing.sm, paddingTop: Spacing.xl },
 });

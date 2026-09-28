@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily } from '@theme/fonts';
+import { Weight } from '@theme/fonts';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   n: {
     width: 32,
     textAlign: 'center',
-    fontFamily: FontFamily.bold,
+    fontWeight: Weight.bold,
     fontSize: 18,
   },
 });

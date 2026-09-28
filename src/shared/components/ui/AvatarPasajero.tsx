@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily } from '@theme/fonts';
+import { Weight } from '@theme/fonts';
 
 interface Props {
   fotoUrl?: string;
@@ -54,6 +54,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   initials: {
-    fontFamily: FontFamily.bold,
+    fontWeight: Weight.bold,
   },
 });

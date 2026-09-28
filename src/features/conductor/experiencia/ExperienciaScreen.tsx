@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppHeader, AppSectionTitle, AvatarPasajero } from '@shared/components/ui';
 import { haceTiempo, pluralViajes } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
 import { mockCalificaciones } from '../data/mockExperiencia';

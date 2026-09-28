@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@theme/useAppTheme';
 import { Palette } from '@theme/colors';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Hit, Shadow, Spacing } from '@theme/spacing';
 import { AppButton } from './AppButton';
 
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     right: undefined,
     backgroundColor: Palette.sosHold,
   },
-  text: { ...Type.field, fontFamily: FontFamily.bold, color: Palette.white, letterSpacing: 0.5 },
+  text: { ...Type.field, fontWeight: Weight.bold, color: Palette.white, letterSpacing: 0.5 },
   tip: {
     position: 'absolute',
     top: Hit.min + Spacing.xs,

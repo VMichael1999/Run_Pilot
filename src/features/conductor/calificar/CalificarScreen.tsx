@@ -18,7 +18,7 @@ import { useConductorStore } from '@store/useConductorStore';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { AppButton, AppTextInput, AvatarPasajero, Chip, StarRating } from '@shared/components/ui';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
+import { Weight, Type } from '@theme/fonts';
 import { Hit, Spacing } from '@theme/spacing';
 import { Duration } from '@theme/motion';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Palette } from '@theme/colors';
-import { FontFamily } from '@theme/fonts';
+import { Weight } from '@theme/fonts';
 import { BorderRadius } from '@theme/spacing';
 
 /** Placa peruana: siempre blanca con la franja azul, en dia y en noche, como la real. */
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   band: {
-    fontFamily: FontFamily.bold,
+    fontWeight: Weight.bold,
     fontSize: 7,
     letterSpacing: 1.3,
     textAlign: 'center',
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   number: {
-    fontFamily: FontFamily.bold,
+    fontWeight: Weight.bold,
     fontSize: 16,
     letterSpacing: 1,
     textAlign: 'center',
