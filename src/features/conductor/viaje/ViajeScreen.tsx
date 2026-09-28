@@ -169,7 +169,13 @@ export function ViajeScreen({ route, navigation }: Props) {
   };
 
   if (estadoViaje === 'llegado') {
-    return <PanelPago solicitud={solicitud} onFinalizar={handleFinalizar} />;
+    return (
+      <PanelPago
+        solicitud={solicitud}
+        distanciaKm={totalKm > 0 ? totalKm : undefined}
+        onFinalizar={handleFinalizar}
+      />
+    );
   }
   if (!fase) return null;
 

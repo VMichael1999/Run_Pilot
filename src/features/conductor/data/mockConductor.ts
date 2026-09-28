@@ -16,6 +16,8 @@ export const mockConductor = {
     color: 'gris',
     anio: 2021,
   },
+  /** Comision de Run Pilot sobre la tarifa (aun no viene del backend). */
+  comision: 0.15,
   /** Sugerencia de demanda mientras espera viajes. */
   demanda: { distrito: 'Miraflores', minutos: 6 },
 } as const;

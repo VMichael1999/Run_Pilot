@@ -11,6 +11,7 @@ import type { LatLng } from '@features/conductor/viaje/services/directionsServic
 import { AvatarPasajero, CountdownRing, RouteStops, SlideToConfirm, Tag } from '@shared/components/ui';
 import { DestinationMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
 import { distanciaRutaKm } from '@shared/utils/geo';
+import { esEfectivo } from '@shared/utils/cobro';
 import { useAppTheme, useIsDark } from '@theme/useAppTheme';
 import { MapStyle } from '@theme/mapStyle';
 import { FontFamily, Type } from '@theme/fonts';
@@ -22,8 +23,6 @@ interface Props {
   onAceptar: () => void;
   onRechazar: () => void;
 }
-
-const esEfectivo = (metodo: string) => metodo.toLowerCase() === 'efectivo';
 
 export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Props) {
   const insets = useSafeAreaInsets();
