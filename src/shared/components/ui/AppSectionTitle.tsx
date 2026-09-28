@@ -11,7 +11,7 @@ interface AppSectionTitleProps {
 }
 
 /** Encabezado de seccion en oracion normal (nunca en mayusculas). */
-export function AppSectionTitle({ children, muted = true, style }: AppSectionTitleProps) {
+export function AppSectionTitle({ children, muted = false, style }: AppSectionTitleProps) {
   const theme = useAppTheme();
 
   return (
@@ -26,7 +26,7 @@ export function AppSectionTitle({ children, muted = true, style }: AppSectionTit
 
 const styles = StyleSheet.create({
   title: {
-    ...Type.section,
+    ...Type.sectionTitle,
     paddingTop: Spacing.xs,
     marginBottom: Spacing.sm,
   },
