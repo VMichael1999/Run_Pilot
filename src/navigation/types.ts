@@ -25,6 +25,8 @@ export type ConductorStackParamList = {
   HistorialDetalle: { viajeId: string };
   Configuracion: undefined;
   Billetera: undefined;
+  Recargar: undefined;
+  Retirar: undefined;
   ServiciosProgramados: undefined;
   SeleccionarVehiculo: undefined;
   /** Solo en desarrollo. */

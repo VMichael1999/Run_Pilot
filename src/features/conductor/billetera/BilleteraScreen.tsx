@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
@@ -25,10 +25,7 @@ interface Movimiento {
   fechaMs: number;
 }
 
-const noDisponible = (accion: string) =>
-  Alert.alert(accion, 'Todavía no está disponible desde la app.');
-
-export function BilleteraScreen(_: Props) {
+export function BilleteraScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
   const historial = useConductorStore((s) => s.historial);
@@ -71,14 +68,14 @@ export function BilleteraScreen(_: Props) {
           <View style={styles.two}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => noDisponible('Recargar')}
+              onPress={() => navigation.navigate('Recargar')}
               style={[styles.b, { backgroundColor: theme.signal }]}
             >
               <Text style={[Type.bodyStrong, { color: theme.onSignal }]}>Recargar</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              onPress={() => noDisponible('Retirar')}
+              onPress={() => navigation.navigate('Retirar')}
               style={[styles.b, styles.bOutline, { borderColor: fg }]}
             >
               <Text style={[Type.bodyStrong, { color: fg }]}>Retirar</Text>

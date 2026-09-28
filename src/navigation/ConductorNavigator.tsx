@@ -13,6 +13,8 @@ import { HistorialViajeScreen } from '@features/conductor/historial/HistorialVia
 import { HistorialDetalleScreen } from '@features/conductor/historial/HistorialDetalleScreen';
 import { ConfiguracionScreen } from '@features/conductor/configuracion/ConfiguracionScreen';
 import { BilleteraScreen } from '@features/conductor/billetera/BilleteraScreen';
+import { RecargarScreen } from '@features/conductor/billetera/RecargarScreen';
+import { RetirarScreen } from '@features/conductor/billetera/RetirarScreen';
 import { ServiciosProgramadosScreen } from '@features/conductor/servicios-programados/ServiciosProgramadosScreen';
 import { SeleccionarVehiculoScreen } from '@features/conductor/vehiculo/SeleccionarVehiculoScreen';
 import { CatalogoScreen } from '@features/dev/CatalogoScreen';
@@ -34,6 +36,8 @@ export function ConductorNavigator() {
       <Stack.Screen name="HistorialDetalle"     component={HistorialDetalleScreen} />
       <Stack.Screen name="Configuracion"        component={ConfiguracionScreen} />
       <Stack.Screen name="Billetera"            component={BilleteraScreen} />
+      <Stack.Screen name="Recargar"             component={RecargarScreen} />
+      <Stack.Screen name="Retirar"              component={RetirarScreen} />
       <Stack.Screen name="ServiciosProgramados" component={ServiciosProgramadosScreen} />
       <Stack.Screen name="SeleccionarVehiculo"  component={SeleccionarVehiculoScreen} />
       {__DEV__ && <Stack.Screen name="Catalogo" component={CatalogoScreen} />}

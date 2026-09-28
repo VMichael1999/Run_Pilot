@@ -1,5 +1,4 @@
 import React from 'react';
-import { Alert } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { IngresosScreen } from '../IngresosScreen';
 import { BilleteraScreen } from '../../billetera/BilleteraScreen';
@@ -70,11 +69,13 @@ describe('BilleteraScreen', () => {
     expect(screen.getByText('Recarga con Yape')).toBeTruthy();
   });
 
-  it('Recargar avisa que aun no esta disponible', () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  it('Recargar y Retirar abren sus pantallas', () => {
+    const navigate = jest.fn();
     useConductorStore.setState({ historial: [] });
-    render(<BilleteraScreen navigation={{} as never} route={{ key: 'b', name: 'Billetera' } as never} />);
+    render(<BilleteraScreen navigation={{ navigate } as never} route={{ key: 'b', name: 'Billetera' } as never} />);
     fireEvent.press(screen.getByRole('button', { name: 'Recargar' }));
-    expect(alert).toHaveBeenCalledWith('Recargar', expect.stringContaining('Todavía no'));
+    expect(navigate).toHaveBeenCalledWith('Recargar');
+    fireEvent.press(screen.getByRole('button', { name: 'Retirar' }));
+    expect(navigate).toHaveBeenCalledWith('Retirar');
   });
 });
