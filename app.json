@@ -14,11 +14,6 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyAMrZcdv1lkWnu_e8g-0HyM4WGpsVdI0bg"
-        }
-      },
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
@@ -26,9 +21,6 @@
     },
     "ios": {
       "supportsTablet": true,
-      "config": {
-        "googleMapsApiKey": "AIzaSyAMrZcdv1lkWnu_e8g-0HyM4WGpsVdI0bg"
-      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Run Pilot necesita tu ubicacion para mostrar tu posicion en el mapa.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Run Pilot necesita tu ubicacion para el servicio de conductor."

@@ -1,4 +1,5 @@
-const GOOGLE_API_KEY = 'AIzaSyAMrZcdv1lkWnu_e8g-0HyM4WGpsVdI0bg';
+// Viene de .env (ver .env.example). Nunca escribir la key aqui.
+const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 export type LatLng = { latitude: number; longitude: number };
 
@@ -27,6 +28,10 @@ function decodePolyline(encoded: string): LatLng[] {
 }
 
 export async function fetchRoute(origin: LatLng, destination: LatLng): Promise<LatLng[]> {
+  if (!GOOGLE_API_KEY) {
+    console.warn('[directions] Falta EXPO_PUBLIC_GOOGLE_MAPS_API_KEY en .env');
+    return [];
+  }
   try {
     const url =
       `https://maps.googleapis.com/maps/api/directions/json` +
@@ -40,7 +45,11 @@ export async function fetchRoute(origin: LatLng, destination: LatLng): Promise<L
       routes?: Array<{ overview_polyline: { points: string } }>;
     };
 
-    if (data.status !== 'OK' || !data.routes?.length) return [];
+    if (data.status !== 'OK' || !data.routes?.length) {
+      // REQUEST_DENIED suele ser la key sin Directions API habilitada o restringida por app
+      if (__DEV__) console.warn(`[directions] Google respondio ${data.status}`);
+      return [];
+    }
     return decodePolyline(data.routes[0].overview_polyline.points);
   } catch {
     return [];
