@@ -1,4 +1,4 @@
-import { fechaCorta, indiceLunes, nombreMes, rangoSemana } from '../fecha';
+import { fechaCorta, indiceLunes, nombreMes, rangoSemana, tituloDia } from '../fecha';
 
 // Domingo 27 de septiembre de 2026, 23:05 (hora local)
 const ahora = new Date(2026, 8, 27, 23, 5).getTime();
@@ -25,4 +25,10 @@ describe('semana', () => {
 
 it('nombreMes', () => {
   expect(nombreMes(ahora)).toBe('Septiembre');
+});
+
+it('tituloDia', () => {
+  expect(tituloDia(new Date(2026, 8, 27, 1, 0).getTime(), ahora)).toBe('Hoy');
+  expect(tituloDia(new Date(2026, 8, 26, 23, 59).getTime(), ahora)).toBe('Ayer');
+  expect(tituloDia(new Date(2026, 8, 25, 12, 0).getTime(), ahora)).toBe('Viernes 25 de septiembre');
 });

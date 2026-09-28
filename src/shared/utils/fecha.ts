@@ -47,3 +47,19 @@ export function rangoSemana(ms = Date.now()): string {
     ? `Semana del ${lunes.getDate()} al ${domingo.getDate()} de ${MESES[domingo.getMonth()]}`
     : `Semana del ${lunes.getDate()} de ${MESES[lunes.getMonth()]} al ${domingo.getDate()} de ${MESES[domingo.getMonth()]}`;
 }
+
+const DIAS_LARGOS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+/** Titulo de un grupo de dias: "Hoy", "Ayer", "Viernes 25 de septiembre". */
+export function tituloDia(ms: number, ahora = Date.now()): string {
+  const dias = Math.round((inicioDia(ahora) - inicioDia(ms)) / DIA_MS);
+  if (dias === 0) return 'Hoy';
+  if (dias === 1) return 'Ayer';
+  const d = new Date(ms);
+  return `${DIAS_LARGOS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
+}
+
+/** Clave de dia local (para agrupar). */
+export function claveDia(ms: number): number {
+  return inicioDia(ms);
+}

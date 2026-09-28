@@ -16,11 +16,12 @@ jest.mock('expo-haptics', () => ({
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(), setItemAsync: jest.fn() }));
 
 const solicitud = mockSolicitudes[0];
-const navigation = { reset: jest.fn() };
+const navigation = { reset: jest.fn(), goBack: jest.fn(), canGoBack: jest.fn(() => true) };
 
-function renderScreen() {
+function renderScreen(conSolicitudActual = true) {
   useConductorStore.setState({
-    solicitudActual: solicitud,
+    estadoViaje: null,
+    solicitudActual: conSolicitudActual ? solicitud : null,
     historial: [{ id: solicitud.id, fechaMs: Date.now(), solicitud, calificacion: 0 }],
   });
   render(
@@ -33,11 +34,24 @@ function renderScreen() {
 
 beforeEach(() => {
   jest.useFakeTimers();
-  navigation.reset.mockClear();
+  jest.clearAllMocks();
+  navigation.canGoBack.mockReturnValue(true);
 });
 afterEach(() => jest.useRealTimers());
 
 describe('CalificarScreen', () => {
+  it('sin pila de navegacion vuelve al inicio', () => {
+    navigation.canGoBack.mockReturnValue(false);
+    renderScreen();
+    fireEvent.press(screen.getByRole('button', { name: 'Omitir' }));
+    expect(navigation.reset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'ConductorHome' }] });
+  });
+
+  it('desde el historial encuentra el viaje aunque ya no sea el actual', () => {
+    renderScreen(false);
+    expect(screen.getByText('¿Cómo fue el viaje con Carlos?')).toBeTruthy();
+  });
+
   it('no se puede enviar sin estrellas', () => {
     renderScreen();
     expect(screen.getByText('¿Cómo fue el viaje con Carlos?')).toBeTruthy();
@@ -59,14 +73,14 @@ describe('CalificarScreen', () => {
     expect(screen.getByText('Calificación enviada')).toBeTruthy();
 
     await act(async () => { jest.advanceTimersByTime(1200); });
-    expect(navigation.reset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'ConductorHome' }] });
+    expect(navigation.goBack).toHaveBeenCalled();
     expect(useConductorStore.getState().solicitudActual).toBeNull();
   });
 
   it('omitir vuelve al inicio sin calificar', () => {
     renderScreen();
     fireEvent.press(screen.getByRole('button', { name: 'Omitir' }));
-    expect(navigation.reset).toHaveBeenCalled();
+    expect(navigation.goBack).toHaveBeenCalled();
     expect(useConductorStore.getState().historial[0].calificacion).toBe(0);
   });
 });

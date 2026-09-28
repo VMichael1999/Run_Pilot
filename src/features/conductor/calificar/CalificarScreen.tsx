@@ -45,19 +45,26 @@ export function CalificarScreen({ route, navigation }: Props) {
   const [enviado,    setEnviado]    = useState(false);
 
   const solicitudStore         = useConductorStore((s) => s.solicitudActual);
+  const delHistorial           = useConductorStore((s) => s.historial.find((v) => v.id === solicitudId));
+  const estadoViaje            = useConductorStore((s) => s.estadoViaje);
   const setSolicitudActual     = useConductorStore((s) => s.setSolicitudActual);
   const actualizarCalificacion = useConductorStore((s) => s.actualizarCalificacion);
 
-  // Usar el store como fuente primaria (cubre viajes simulados con id dinamico)
+  // Store primero (viajes simulados con id dinamico), luego el historial
+  // (calificar despues desde Historial) y por ultimo los datos de ejemplo
   const solicitud =
     (solicitudStore?.id === solicitudId ? solicitudStore : null) ??
+    delHistorial?.solicitud ??
     mockSolicitudes.find((s) => s.id === solicitudId);
 
   const pasajero = solicitud?.pasajero;
 
-  const irAlHome = () => {
-    setSolicitudActual(null); // limpiar solicitud completada
-    navigation.reset({ index: 0, routes: [{ name: 'ConductorHome' }] });
+  // Vuelve a donde se abrio: al inicio si viene del viaje (Viaje se reemplazo
+  // por esta pantalla), al historial si se califico despues
+  const volver = () => {
+    if (!estadoViaje && solicitudStore?.id === solicitudId) setSolicitudActual(null);
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.reset({ index: 0, routes: [{ name: 'ConductorHome' }] });
   };
 
   const handleEnviar = () => {
@@ -69,7 +76,7 @@ export function CalificarScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     if (!enviado) return;
-    const t = setTimeout(irAlHome, VOLVER_MS);
+    const t = setTimeout(volver, VOLVER_MS);
     return () => clearTimeout(t);
   }, [enviado]);
 
@@ -89,7 +96,7 @@ export function CalificarScreen({ route, navigation }: Props) {
             Calificación enviada
           </Text>
           <Text style={[Type.body, styles.center, { color: theme.textMuted }]}>
-            Le diste {estrellas} {estrellas === 1 ? 'estrella' : 'estrellas'} a {pasajero.nombre}. Volviendo al inicio.
+            Le diste {estrellas} {estrellas === 1 ? 'estrella' : 'estrellas'} a {pasajero.nombre}.
           </Text>
         </Animated.View>
       </View>
@@ -144,7 +151,7 @@ export function CalificarScreen({ route, navigation }: Props) {
         />
         <TouchableOpacity
           accessibilityRole="button"
-          onPress={irAlHome}
+          onPress={volver}
           style={styles.textBtn}
           activeOpacity={0.6}
         >
