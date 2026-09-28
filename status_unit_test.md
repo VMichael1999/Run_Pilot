@@ -3,7 +3,7 @@
 | Modulo | Archivo de test | Estado |
 |--------|----------------|--------|
 | ThemeColors (roles y contraste) | src/theme/__tests__/colors.test.ts | 27 tests, en verde |
-| useAuthStore | pendiente | sin tests |
+| useAuthStore | pendiente | sin tests (cubierto indirectamente por Login y Cuenta) |
 | useThemeStore | src/store/__tests__/useThemeStore.test.ts | 5 tests, en verde |
 | ConductorHomeScreen | src/features/conductor/home/__tests__/ConductorHomeScreen.test.tsx | 3 tests (render), en verde |
 | IncomingRequestOverlay | src/features/conductor/home/__tests__/IncomingRequestOverlay.test.tsx | 4 tests (render, rechazar, aceptar accesible, expira), en verde |
@@ -15,8 +15,7 @@
 | CalificarScreen (estrellas, etiquetas, enviar, omitir, desde historial) | src/features/conductor/calificar/__tests__/CalificarScreen.test.tsx | 5 tests, en verde |
 | HistorialViaje + HistorialDetalle | src/features/conductor/historial/__tests__/HistorialViajeScreen.test.tsx | 5 tests, en verde |
 | agrupar historial por día | src/features/conductor/historial/__tests__/agrupar.test.ts | 1 test, en verde |
-| LoginScreen | pendiente | sin tests |
-| LoginVerificacionScreen | pendiente | sin tests |
+| LoginScreen + LoginVerificacionScreen | src/features/auth/__tests__/Login.test.tsx | 4 tests, en verde |
 | Solicitudes + SolicitudDetalle + ServiciosProgramados | src/features/conductor/solicitudes/__tests__/SolicitudesScreen.test.tsx | 3 tests, en verde |
 | IngresosScreen + BilleteraScreen | src/features/conductor/ingresos/__tests__/IngresosScreen.test.tsx | 5 tests, en verde |
 | resumen de ingresos (hoy, semana, mes) | src/features/conductor/ingresos/__tests__/resumen.test.ts | 4 tests, en verde |
