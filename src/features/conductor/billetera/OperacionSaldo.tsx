@@ -4,6 +4,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import type { LogoPago } from '@shared/components/ui/logosPago';
 import { AmountField, AppButton, AppHeader, AppSectionTitle, OptionRow, Segmented } from '@shared/components/ui';
 import { formatSoles } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
@@ -15,6 +16,8 @@ export interface Opcion {
   id: string;
   /** Para el boton: "con Yape", "a tu cuenta bancaria". */
   corto: string;
+  /** Logo en assets/pagos, si el medio lo tiene. */
+  logo?: LogoPago;
   nombre: string;
   detalle: string;
   icono: string;
@@ -26,6 +29,8 @@ interface Props {
   saldoLabel: string;
   saldo: number;
   montosRapidos: { value: string; label: string }[];
+  /** Monto con el que abre la pantalla ('' = ninguno marcado). */
+  montoInicial?: string;
   seccionOpciones: string;
   opciones: readonly Opcion[];
   min: number;
@@ -46,7 +51,7 @@ interface Props {
 export function OperacionSaldo(p: Props) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
-  const [monto, setMonto] = useState('');
+  const [monto, setMonto] = useState(p.montoInicial ?? '');
   const [opcionId, setOpcionId] = useState<string | null>(null);
   const [hecho, setHecho] = useState<{ titulo: string; detalle: string } | null>(null);
 
@@ -108,6 +113,7 @@ export function OperacionSaldo(p: Props) {
                 titulo={o.nombre}
                 detalle={o.detalle}
                 icono={o.icono as never}
+                logo={o.logo}
                 selected={o.id === opcionId}
                 onPress={() => setOpcionId(o.id)}
               />

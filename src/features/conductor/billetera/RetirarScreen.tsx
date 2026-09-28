@@ -10,6 +10,8 @@ type Props = NativeStackScreenProps<ConductorStackParamList, 'Retirar'>;
 /** Retirar saldo a una cuenta, billetera digital o en efectivo en un agente. */
 export function RetirarScreen({ navigation }: Props) {
   const saldo = mockBilletera.saldo;
+  // S/ 20 marcado solo si alcanza el saldo; si no, no se sugiere ningun monto
+  const montoInicial = saldo >= 20 ? '20' : '';
   return (
     <OperacionSaldo
       titulo="Retirar saldo"
@@ -20,6 +22,7 @@ export function RetirarScreen({ navigation }: Props) {
         { value: '50', label: 'S/ 50' },
         { value: saldo.toFixed(2), label: 'Todo' },
       ]}
+      montoInicial={montoInicial}
       seccionOpciones="¿Dónde lo recibes?"
       opciones={destinosRetiro}
       min={MONTO_MIN}

@@ -60,6 +60,11 @@ describe('ConfiguracionScreen', () => {
     fireEvent.press(screen.getByRole('tab', { name: 'Automático' }));
     expect(useThemeStore.getState().preference).toBe('system');
   });
+
+  it('el catalogo de componentes no aparece como opcion', () => {
+    render(<ConfiguracionScreen navigation={{ goBack: jest.fn(), navigate: jest.fn() } as never} route={{} as never} />);
+    expect(screen.queryByText(/Catálogo/)).toBeNull();
+  });
 });
 
 describe('SeleccionarVehiculoScreen', () => {
