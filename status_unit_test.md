@@ -5,6 +5,8 @@
 | ThemeColors (roles y contraste) | src/theme/__tests__/colors.test.ts | 25 tests, en verde |
 | useAuthStore | pendiente | sin tests |
 | useThemeStore | src/store/__tests__/useThemeStore.test.ts | 5 tests, en verde |
+| ConductorHomeScreen | src/features/conductor/home/__tests__/ConductorHomeScreen.test.tsx | 3 tests (render), en verde |
+| format (soles, viajes, tiempo) | src/shared/utils/__tests__/format.test.ts | 9 tests, en verde |
 | LoginScreen | pendiente | sin tests |
 | LoginVerificacionScreen | pendiente | sin tests |
 | SolicitudesScreen | pendiente | sin tests |

@@ -1,14 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  ActivityIndicator,
-} from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated as RNAnimated } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import * as Location from 'expo-location';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -20,15 +15,18 @@ import { DrawerMenu, DRAWER_WIDTH } from './DrawerMenu';
 import type { DrawerMenuItem } from './DrawerMenu';
 import { IncomingRequestOverlay } from './components/IncomingRequestOverlay';
 import { mockSolicitudes } from '../data/mockSolicitudes';
+import { mockConductor } from '../data/mockConductor';
 import type { Solicitud } from '../types';
 import type { LatLng } from '../viaje/services/directionsService';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppButton, InfoNote, MapButton, MapPill, Plate, StatusDot } from '@shared/components/ui';
+import { formatSoles, haceTiempo, inicioDelDia, pluralViajes } from '@shared/utils/format';
+import { useAppTheme, useIsDark } from '@theme/useAppTheme';
+import { MapStyle } from '@theme/mapStyle';
+import { FontFamily, Type } from '@theme/fonts';
+import { Spacing, BorderRadius, Hit, Shadow } from '@theme/spacing';
+import { Duration } from '@theme/motion';
 
 type Nav = NativeStackNavigationProp<ConductorStackParamList>;
-
-const OFFLINE_PANEL_H = 180;
 
 const LIMA_REGION = {
   latitude: -12.0464,
@@ -39,9 +37,6 @@ const LIMA_REGION = {
 
 const JOCKEY_PLAZA: LatLng = { latitude: -12.0867, longitude: -76.9981 };
 
-// Mock driver KPIs
-const KPI = { calificacion: 4.75, aceptacion: 95, cancelacion: 2.0 };
-
 function crearSolicitudSimulada(driverPos: LatLng): Solicitud {
   const base = mockSolicitudes[Math.floor(Math.random() * mockSolicitudes.length)];
   return {
@@ -50,7 +45,7 @@ function crearSolicitudSimulada(driverPos: LatLng): Solicitud {
     paradas: [
       {
         id: 'sim-origen',
-        direccion: 'Mi ubicacion actual',
+        direccion: 'Mi ubicación actual',
         distanciaKm: parseFloat((Math.random() * 2 + 0.5).toFixed(1)),
         duracionMin: Math.floor(Math.random() * 5 + 2),
         coordenadas: driverPos,
@@ -71,8 +66,11 @@ function crearSolicitudSimulada(driverPos: LatLng): Solicitud {
 export function ConductorHomeScreen() {
   const insets      = useSafeAreaInsets();
   const navigation  = useNavigation<Nav>();
+  const theme       = useAppTheme();
+  const isDark      = useIsDark();
   const isOnline          = useConductorStore((s) => s.isOnline);
   const ingresosDia       = useConductorStore((s) => s.ingresosDia);
+  const historial         = useConductorStore((s) => s.historial);
   const setOnline         = useConductorStore((s) => s.setOnline);
   const setSolicitudActual = useConductorStore((s) => s.setSolicitudActual);
   const phone       = useAuthStore((s) => s.phone);
@@ -85,7 +83,7 @@ export function ConductorHomeScreen() {
   const driverPos  = useRef<LatLng | null>(null);
   const simTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const translateX = useRef(new RNAnimated.Value(-DRAWER_WIDTH)).current;
   const mapRef     = useRef<MapView>(null);
 
   // GPS
@@ -135,18 +133,45 @@ export function ConductorHomeScreen() {
   // Drawer
   const abrirDrawer  = () => {
     setDrawerVisible(true);
-    Animated.timing(translateX, { toValue: 0, duration: 280, useNativeDriver: true }).start();
+    RNAnimated.timing(translateX, { toValue: 0, duration: 280, useNativeDriver: true }).start();
   };
   const cerrarDrawer = () => {
-    Animated.timing(translateX, { toValue: -DRAWER_WIDTH, duration: 240, useNativeDriver: true })
+    RNAnimated.timing(translateX, { toValue: -DRAWER_WIDTH, duration: 240, useNativeDriver: true })
       .start(() => setDrawerVisible(false));
   };
 
   const handleToggleOnline = () => {
     if (toggling) return;
     setToggling(true);
-    setTimeout(() => { setOnline(!isOnline); setToggling(false); }, 400);
+    setTimeout(() => {
+      setOnline(!isOnline);
+      setToggling(false);
+      // Confirma el cambio de estado sin tener que mirar la pantalla
+      void Haptics.notificationAsync(
+        isOnline ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
+      );
+    }, 400);
   };
+
+  // "Buscando viajes ... hace N min": cuenta desde que se conecto
+  const [onlineDesde, setOnlineDesde] = useState<number | null>(null);
+  const [ahora, setAhora] = useState(Date.now());
+  useEffect(() => {
+    if (!isOnline) { setOnlineDesde(null); return; }
+    setOnlineDesde(Date.now());
+    const iv = setInterval(() => setAhora(Date.now()), 30_000);
+    return () => clearInterval(iv);
+  }, [isOnline]);
+
+  // "Hoy S/ … · N viajes": ambos del historial de hoy para que sean coherentes
+  const hoy = useMemo(() => {
+    const desde = inicioDelDia();
+    const viajes = historial.filter((v) => v.fechaMs >= desde);
+    return { total: viajes.reduce((acc, v) => acc + v.solicitud.precio, 0), viajes: viajes.length };
+  }, [historial]);
+
+  const [panelH, setPanelH] = useState(0);
+  const { vehiculo } = mockConductor;
 
   const nav = (screen: keyof ConductorStackParamList) => {
     cerrarDrawer();
@@ -156,91 +181,119 @@ export function ConductorHomeScreen() {
   const drawerItems: DrawerMenuItem[] = [
     { label: 'Tablero de solicitudes', icono: 'list-outline',      onPress: () => nav('Solicitudes')          },
     { label: 'Billetera',              icono: 'wallet-outline',    badge: `S/ ${ingresosDia.toFixed(2)}`, onPress: () => nav('Billetera') },
-    { label: 'Servicios Programados',  icono: 'calendar-outline',  onPress: () => nav('ServiciosProgramados') },
+    { label: 'Servicios programados',  icono: 'calendar-outline',  onPress: () => nav('ServiciosProgramados') },
     { label: 'Ingresos',               icono: 'cash-outline',      onPress: () => nav('Ingresos')             },
     { label: 'Experiencia',           icono: 'star-outline',      onPress: () => nav('Experiencia')          },
     { label: 'Historial de viajes',   icono: 'time-outline',      onPress: () => nav('HistorialViaje')       },
-    { label: 'Configuracion',         icono: 'settings-outline',  onPress: () => nav('Configuracion')        },
-    { label: 'Cerrar sesion',         icono: 'log-out-outline',   onPress: () => { cerrarDrawer(); setTimeout(logout, 260); } },
+    { label: 'Configuración',         icono: 'settings-outline',  onPress: () => nav('Configuracion')        },
+    { label: 'Cerrar sesión',         icono: 'log-out-outline',   onPress: () => { cerrarDrawer(); setTimeout(logout, 260); } },
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
         initialRegion={region}
+        customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
+        mapPadding={{ top: insets.top + 100, right: 0, bottom: panelH, left: 0 }}
         showsUserLocation
         showsMyLocationButton={false}
+        toolbarEnabled={false}
       />
 
-      {/* ── Top bar ── */}
-      <View style={[styles.topBar, { paddingTop: insets.top + Spacing.sm }]}>
-        <TouchableOpacity style={styles.iconBtn} onPress={abrirDrawer} activeOpacity={0.85}>
-          <Ionicons name="menu" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconBtn}
+      {/* Barra superior: menu, estado en una palabra, centrar */}
+      <View style={[styles.topBar, { top: insets.top + Spacing.sm }]}>
+        <MapButton icon="menu-outline" accessibilityLabel="Abrir menú" onPress={abrirDrawer} />
+        <MapPill accessibilityLabel={isOnline ? 'Estado: conectado' : 'Estado: desconectado'}>
+          <StatusDot online={isOnline} />
+          <Text style={[Type.label, { color: theme.text }]} numberOfLines={1}>
+            {isOnline ? 'Conectado' : 'Desconectado'}
+          </Text>
+        </MapPill>
+        <MapButton
+          icon="navigate-outline"
+          accessibilityLabel="Centrar el mapa en tu ubicación"
           onPress={() => mapRef.current?.animateToRegion(region, 600)}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="locate" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
+        />
       </View>
 
-      {/* ── Floating balance badge ── */}
-      <View style={[styles.balanceBadgeWrap, { top: insets.top + 16 }]}>
-        <View style={styles.balanceBadge}>
-          <Text style={styles.balanceSymbol}>S/</Text>
-          <Text style={styles.balanceAmount}>{ingresosDia.toFixed(2)}</Text>
-        </View>
+      <View style={[styles.earnWrap, { top: insets.top + Spacing.sm + Hit.control + Spacing.sm }]} pointerEvents="none">
+        <MapPill accessibilityLabel={`Hoy llevas ${formatSoles(hoy.total)} en ${pluralViajes(hoy.viajes)}`}>
+          <Text style={[styles.earnText, { color: theme.text }]} numberOfLines={1}>
+            Hoy <Text style={styles.earnBold}>{formatSoles(hoy.total)}</Text> · {pluralViajes(hoy.viajes)}
+          </Text>
+        </MapPill>
       </View>
 
-      {/* ══════════════════════════════
-          GO / STOP button (always visible)
-      ══════════════════════════════ */}
+      {/* Panel inferior: un solo estado a la vez */}
       <View
-        style={[styles.goArea, { bottom: OFFLINE_PANEL_H + Spacing.xl }]}
+        style={[
+          styles.panel,
+          { backgroundColor: theme.surface, paddingBottom: insets.bottom + Spacing.xl + 2 },
+        ]}
+        onLayout={(e) => setPanelH(e.nativeEvent.layout.height)}
       >
-        <TouchableOpacity
-          style={[styles.goBtn, isOnline && styles.stopBtn]}
-          onPress={handleToggleOnline}
-          activeOpacity={0.88}
-        >
-          {toggling
-            ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.goText}>{isOnline ? 'STOP' : 'GO'}</Text>
-          }
-        </TouchableOpacity>
-        <Text style={styles.offlineLabel}>
-          {isOnline ? 'En linea' : 'Estas desconectado'}
-        </Text>
-      </View>
-
-      {/* ══════════════════════════════
-          KPI stats panel (siempre visible)
-      ══════════════════════════════ */}
-      <View style={[styles.offlinePanel, { paddingBottom: insets.bottom + Spacing.md }]}>
-        <View style={styles.kpiRow}>
-          <View style={styles.kpiItem}>
-            <Ionicons name="star" size={20} color={Colors.warning} />
-            <Text style={styles.kpiVal}>{KPI.calificacion.toFixed(2)}</Text>
-            <Text style={styles.kpiLbl}>Calificacion</Text>
-          </View>
-          <View style={styles.kpiSep} />
-          <View style={styles.kpiItem}>
-            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.success} />
-            <Text style={styles.kpiVal}>{KPI.aceptacion}%</Text>
-            <Text style={styles.kpiLbl}>Aceptacion</Text>
-          </View>
-          <View style={styles.kpiSep} />
-          <View style={styles.kpiItem}>
-            <Ionicons name="close-circle-outline" size={20} color={Colors.error} />
-            <Text style={styles.kpiVal}>{KPI.cancelacion}%</Text>
-            <Text style={styles.kpiLbl}>Cancelacion</Text>
-          </View>
-        </View>
+        {isOnline ? (
+          <Animated.View
+            key="online"
+            entering={FadeIn.duration(Duration.base)}
+            exiting={FadeOut.duration(Duration.fast)}
+            style={styles.panelBody}
+          >
+            <View style={styles.hRow}>
+              <Text style={[Type.action, styles.flex, { color: theme.text }]}>Buscando viajes cerca de ti</Text>
+              {onlineDesde !== null && (
+                <Text style={[Type.detail, { color: theme.textMuted }]}>{haceTiempo(onlineDesde, ahora)}</Text>
+              )}
+            </View>
+            <InfoNote title={`Más demanda en ${mockConductor.demanda.distrito}.`}>
+              Está a {mockConductor.demanda.minutos} min de donde estás.
+            </InfoNote>
+            <AppButton
+              label="Desconectarme"
+              variant="ghost"
+              size="md"
+              loading={toggling}
+              onPress={handleToggleOnline}
+            />
+          </Animated.View>
+        ) : (
+          <Animated.View
+            key="offline"
+            entering={FadeIn.duration(Duration.base)}
+            exiting={FadeOut.duration(Duration.fast)}
+            style={styles.panelBody}
+          >
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={`Vehículo activo: ${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.color}. Cambiar vehículo`}
+              style={styles.veh}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('SeleccionarVehiculo')}
+            >
+              <Plate placa={vehiculo.placa} />
+              <View style={styles.flex}>
+                <Text style={[Type.address, styles.vehName, { color: theme.text }]}>
+                  {vehiculo.marca} {vehiculo.modelo} · {vehiculo.color}
+                </Text>
+                <Text style={[Type.detail, { color: theme.textMuted }]}>
+                  Vehículo activo · <Text style={[styles.link, { color: theme.text }]}>cambiar</Text>
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <AppButton
+              label="Conectarme"
+              icon={<Ionicons name="power" size={20} color={theme.onPrimary} />}
+              loading={toggling}
+              onPress={handleToggleOnline}
+            />
+            <Text style={[Type.detail, styles.center, { color: theme.textMuted }]}>
+              Empezarás a recibir viajes cerca de {mockConductor.zona}.
+            </Text>
+          </Animated.View>
+        )}
       </View>
 
       {/* Solicitud entrante — overlay pantalla completa */}
@@ -269,111 +322,54 @@ export function ConductorHomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  flex: { flex: 1 },
+  center: { textAlign: 'center' },
 
-  /* Top bar */
   topBar: {
     position: 'absolute',
-    top: 0, left: Spacing.lg, right: Spacing.lg,
+    left: Spacing.md,
+    right: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.sm,
   },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.white,
-    alignItems: 'center', justifyContent: 'center',
-    ...Shadow.md,
-  },
-
-  /* Floating balance badge */
-  balanceBadgeWrap: {
+  earnWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     alignItems: 'center',
   },
-  balanceBadge: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
-    backgroundColor: Colors.black,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    ...Shadow.md,
+  earnText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13.5,
   },
-  balanceSymbol: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    color: 'rgba(255,255,255,0.6)',
-  },
-  balanceAmount: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xl,
-    color: Colors.white,
-  },
+  earnBold: { fontFamily: FontFamily.bold },
 
-  /* ── OFFLINE ── */
-  goArea: {
+  panel: {
     position: 'absolute',
-    left: 0, right: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: BorderRadius.sheet,
+    borderTopRightRadius: BorderRadius.sheet,
+    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    ...Shadow.sheet,
+  },
+  panelBody: { gap: 14 },
+  hRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm + 2,
+  },
+  veh: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+    minHeight: Hit.min,
   },
-  goBtn: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: Colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    ...Shadow.lg,
-  },
-  stopBtn: {
-    backgroundColor: Colors.error,
-  },
-  goText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xl,
-    color: Colors.white,
-    letterSpacing: 2,
-  },
-  offlineLabel: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.white,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 5,
-    borderRadius: BorderRadius.full,
-  },
-  offlinePanel: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: OFFLINE_PANEL_H,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    justifyContent: 'center',
-    ...Shadow.lg,
-  },
-  kpiRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: Spacing.lg,
-  },
-  kpiItem: { alignItems: 'center', flex: 1, gap: 4 },
-  kpiSep: {
-    width: 1, height: 48,
-    backgroundColor: Colors.divider,
-  },
-  kpiVal: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xl,
-    color: Colors.textPrimary,
-  },
-  kpiLbl: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-  },
-
+  vehName: { fontFamily: FontFamily.semibold },
+  link: { textDecorationLine: 'underline' },
 });
