@@ -4,7 +4,9 @@
 |--------|----------------|--------|
 | Type (letra del sistema, pesos por rol) | src/theme/__tests__/fonts.test.ts | 3 tests, en verde |
 | ThemeColors (roles y contraste) | src/theme/__tests__/colors.test.ts | 27 tests, en verde |
-| useConductorStore (fases, espera, finalizar, ganancia neta, vehículo) | src/store/__tests__/useConductorStore.test.ts | 4 tests, en verde |
+| useConductorStore (fases, espera, finalizar, ganancia neta, vehículo, cancelar) | src/store/__tests__/useConductorStore.test.ts | 6 tests, en verde |
+| Cancelar viaje (motivos, espera mínima para "no se presentó", tasa) | src/features/conductor/viaje/__tests__/cancelacion.test.ts | 4 tests, en verde |
+| Aviso "Viaje cancelado" en el inicio | src/features/conductor/home/__tests__/ConductorHomeScreen.test.tsx | 2 tests, en verde |
 | Saldo de la billetera (viajes de la sesión) | src/features/conductor/billetera/__tests__/saldo.test.ts | 2 tests, en verde |
 | Viaje en curso en el inicio (textos por fase, franja, contador) | src/features/conductor/home/__tests__/viajeEnCurso.test.ts + ConductorHomeScreen.test.tsx | 7 + 3 tests, en verde |
 | useAuthStore | pendiente | sin tests (cubierto indirectamente por Login y Cuenta) |
@@ -14,7 +16,7 @@
 | PanelPago (efectivo, digital, otro método) | src/features/conductor/viaje/__tests__/PanelPago.test.tsx | 3 tests, en verde |
 | cobro (desglose, distrito, efectivo) | src/shared/utils/__tests__/cobro.test.ts | 6 tests, en verde |
 | geo (distancia, restante, formato) | src/shared/utils/__tests__/geo.test.ts | 11 tests, en verde |
-| ViajeScreen (fases deslizables, panel del pasajero, SOS, llamar, fuga de GPS) | src/features/conductor/viaje/__tests__/ViajeScreen.test.tsx | 11 tests, en verde |
+| ViajeScreen (fases deslizables, panel del pasajero, SOS, llamar, fuga de GPS, cancelar viaje) | src/features/conductor/viaje/__tests__/ViajeScreen.test.tsx | 18 tests, en verde |
 | format (soles, viajes, tiempo) | src/shared/utils/__tests__/format.test.ts | 9 tests, en verde |
 | CalificarScreen (estrellas, etiquetas, enviar, omitir, desde historial) | src/features/conductor/calificar/__tests__/CalificarScreen.test.tsx | 5 tests, en verde |
 | HistorialViaje + HistorialDetalle | src/features/conductor/historial/__tests__/HistorialViajeScreen.test.tsx | 5 tests, en verde |

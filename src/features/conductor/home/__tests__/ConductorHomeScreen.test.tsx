@@ -31,7 +31,7 @@ jest.mock('../components/IncomingRequestOverlay', () => ({ IncomingRequestOverla
 beforeEach(() => {
   jest.useFakeTimers();
   mockNavigate.mockClear();
-  useConductorStore.setState({ isOnline: false, historial: [], solicitudActual: null, estadoViaje: null, esperandoDesde: null, vehiculoId: 'veh-1' });
+  useConductorStore.setState({ isOnline: false, historial: [], solicitudActual: null, estadoViaje: null, esperandoDesde: null, vehiculoId: 'veh-1', cancelaciones: [] });
 });
 afterEach(() => jest.useRealTimers());
 
@@ -123,5 +123,28 @@ describe('ConductorHomeScreen · viaje en curso', () => {
     await act(async () => { useConductorStore.setState({ estadoViaje: null }); });
     expect(screen.queryByText('Viaje en curso')).toBeNull();
     expect(screen.getByText('Buscando viajes cerca de ti')).toBeTruthy();
+  });
+});
+
+describe('ConductorHomeScreen · viaje cancelado', () => {
+  it('muestra el aviso con el motivo unos segundos y vuelve a buscar viajes', async () => {
+    useConductorStore.setState({ isOnline: true, solicitudActual: mockSolicitudes[0], estadoViaje: 'esperando' });
+    render(<ConductorHomeScreen />);
+    await act(async () => {});
+    await act(async () => { useConductorStore.getState().cancelarViaje('no_se_presento'); });
+    expect(screen.getByText('Viaje cancelado')).toBeTruthy();
+    expect(screen.getByText('Carlos · El pasajero no se presentó')).toBeTruthy();
+    expect(screen.getByText('Buscando viajes cerca de ti')).toBeTruthy();
+    await act(async () => { jest.advanceTimersByTime(6000); });
+    expect(screen.queryByText('Viaje cancelado')).toBeNull();
+  });
+
+  it('una cancelacion vieja no se vuelve a mostrar', async () => {
+    useConductorStore.setState({
+      cancelaciones: [{ solicitud: mockSolicitudes[0], motivo: 'otro', fechaMs: Date.now() - 60_000 }],
+    });
+    render(<ConductorHomeScreen />);
+    await act(async () => {});
+    expect(screen.queryByText('Viaje cancelado')).toBeNull();
   });
 });

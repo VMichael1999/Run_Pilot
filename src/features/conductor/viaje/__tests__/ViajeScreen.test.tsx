@@ -38,10 +38,10 @@ jest.mock('../components/PanelPago', () => {
 
 const loc = Location as jest.Mocked<typeof Location>;
 const solicitud = mockSolicitudes[0];
-const navigation = { goBack: jest.fn(), replace: jest.fn() };
+const navigation = { goBack: jest.fn(), replace: jest.fn(), reset: jest.fn() };
 
-async function renderEn(estado: EstadoViaje) {
-  useConductorStore.setState({ solicitudActual: solicitud, estadoViaje: estado });
+async function renderEn(estado: EstadoViaje, esperandoDesde: number | null = null) {
+  useConductorStore.setState({ solicitudActual: solicitud, estadoViaje: estado, esperandoDesde, cancelaciones: [] });
   const r = render(
     <ViajeScreen
       navigation={navigation as never}
@@ -144,5 +144,52 @@ describe('ViajeScreen', () => {
     unmount();
     await act(async () => { resolverWatch({ remove }); });
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ViajeScreen · cancelar viaje', () => {
+  it.each(['aceptado', 'en_camino', 'esperando'] as const)('%s: se puede cancelar', async (estado) => {
+    await renderEn(estado, estado === 'esperando' ? Date.now() : null);
+    expect(screen.getByRole('button', { name: 'Cancelar viaje' })).toBeTruthy();
+  });
+
+  it('con el pasajero a bordo ya no se puede cancelar', async () => {
+    await renderEn('iniciado');
+    expect(screen.queryByRole('button', { name: 'Cancelar viaje' })).toBeNull();
+  });
+
+  it('"no se presento" se habilita recien a los 5 min de espera', async () => {
+    await renderEn('esperando', Date.now() - 4 * 60_000);
+    fireEvent.press(screen.getByRole('button', { name: 'Cancelar viaje' }));
+    expect(screen.getByText('Disponible en 1:00 (espera mínima de 5 min)')).toBeTruthy();
+    const noShow = () => screen.getByRole('radio', { name: /El pasajero no se presentó/ });
+    expect(noShow().props.accessibilityState).toMatchObject({ disabled: true });
+
+    await act(async () => { jest.advanceTimersByTime(60_000); });
+    expect(noShow().props.accessibilityState).toMatchObject({ disabled: false });
+    expect(screen.getByText('No afecta tu tasa de cancelación')).toBeTruthy();
+  });
+
+  it('confirmar cancela con el motivo y vuelve al inicio', async () => {
+    await renderEn('esperando', Date.now() - 5 * 60_000);
+    fireEvent.press(screen.getByRole('button', { name: 'Cancelar viaje' }));
+    fireEvent.press(screen.getByRole('radio', { name: /El pasajero no se presentó/ }));
+    const confirmar = screen.getAllByRole('button', { name: 'Cancelar viaje' });
+    fireEvent.press(confirmar[confirmar.length - 1]);
+
+    const st = useConductorStore.getState();
+    expect(st.estadoViaje).toBeNull();
+    expect(st.cancelaciones[0]).toMatchObject({ motivo: 'no_se_presento', solicitud: { id: solicitud.id } });
+    expect(navigation.reset).toHaveBeenCalledWith({ index: 0, routes: [{ name: 'ConductorHome' }] });
+  });
+
+  it('sin motivo no se puede confirmar y "Volver al viaje" no cancela', async () => {
+    await renderEn('en_camino');
+    fireEvent.press(screen.getByRole('button', { name: 'Cancelar viaje' }));
+    const confirmar = screen.getAllByRole('button', { name: 'Cancelar viaje' });
+    expect(confirmar[confirmar.length - 1]).toBeDisabled();
+    fireEvent.press(screen.getByRole('button', { name: 'Volver al viaje' }));
+    expect(useConductorStore.getState().cancelaciones).toHaveLength(0);
+    expect(navigation.reset).not.toHaveBeenCalled();
   });
 });

@@ -5,6 +5,7 @@ import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import type { EstadoViaje } from '../types';
@@ -12,6 +13,9 @@ import { useConductorStore } from '@store/useConductorStore';
 import { cronometro, useSegundosDesde } from '@shared/hooks/useSegundosDesde';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { PanelPago } from './components/PanelPago';
+import { CancelarViajeSheet } from './components/CancelarViajeSheet';
+import { ESPERA_MINIMA_SEG, puedeCancelar } from './cancelacion';
+import type { MotivoCancelacion } from '@store/useConductorStore';
 import { fetchRoute, type LatLng } from './services/directionsService';
 import { AvatarPasajero, MapButton, SlideToConfirm, SosButton } from '@shared/components/ui';
 import { esEfectivo } from '@shared/utils/cobro';
@@ -49,7 +53,7 @@ const ACCION: Partial<Record<EstadoViaje, { label: string; a11y: string }>> = {
 };
 
 /** Espera sin costo en el punto de recojo (referencia: Uber espera 5 min en UberX). */
-const ESPERA_GRATIS_SEG = 5 * 60;
+const ESPERA_GRATIS_SEG = ESPERA_MINIMA_SEG;
 
 const LIMA_REGION = {
   latitude: -12.0464, longitude: -77.0428,
@@ -73,6 +77,8 @@ export function ViajeScreen({ route, navigation }: Props) {
   const estadoViaje     = useConductorStore((s) => s.estadoViaje);
   const avanzarEstado   = useConductorStore((s) => s.avanzarEstado);
   const finalizarViaje  = useConductorStore((s) => s.finalizarViaje);
+  const cancelarViaje   = useConductorStore((s) => s.cancelarViaje);
+  const [cancelando, setCancelando] = useState(false);
 
   const solicitud = solicitudActual ?? mockSolicitudes.find((s) => s.id === solicitudId);
   const origen    = solicitud?.paradas.find((p) => p.esOrigen);
@@ -164,6 +170,12 @@ export function ViajeScreen({ route, navigation }: Props) {
   const handleFinalizar = () => {
     finalizarViaje();
     navigation.replace('Calificar', { solicitudId: solicitud.id });
+  };
+  const handleCancelar = (motivo: MotivoCancelacion) => {
+    setCancelando(false);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    cancelarViaje(motivo);
+    navigation.reset({ index: 0, routes: [{ name: 'ConductorHome' }] });
   };
 
   if (estadoViaje === 'llegado') {
@@ -369,7 +381,28 @@ export function ViajeScreen({ route, navigation }: Props) {
               onConfirm={handleAvanzar}
             />
           )}
+
+          {/* Antes de que suba el pasajero: cancelar con motivo (despues solo queda SOS) */}
+          {puedeCancelar(estadoViaje) && (
+            <TouchableOpacity
+              onPress={() => setCancelando(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar viaje"
+              hitSlop={HitSlop}
+              style={styles.cancelar}
+            >
+              <Text style={[Type.label, { color: theme.danger }]}>Cancelar viaje</Text>
+            </TouchableOpacity>
+          )}
         </Animated.View>
+        <CancelarViajeSheet
+          visible={cancelando}
+          estado={estadoViaje}
+          esperandoSeg={esperandoSeg}
+          nombrePasajero={pasajero.nombre}
+          onCerrar={() => setCancelando(false)}
+          onConfirmar={handleCancelar}
+        />
       </View>
     </View>
   );
@@ -378,6 +411,7 @@ export function ViajeScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
+  cancelar: { alignSelf: 'center', minHeight: Hit.min, justifyContent: 'center', paddingHorizontal: Spacing.md },
 
   top: {
     position: 'absolute',
