@@ -15,6 +15,7 @@ import { fechaCorta } from '@shared/utils/fecha';
 import { formatSoles } from '@shared/utils/format';
 import { distanciaRutaKm } from '@shared/utils/geo';
 import { useAppTheme } from '@theme/useAppTheme';
+import { useMapStyle } from '@shared/components/map/mapStyle';
 import { FontFamily, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
@@ -34,6 +35,7 @@ function referencia(id: string): string {
 export function HistorialDetalleScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
+  const mapStyle = useMapStyle();
   const { viajeId } = route.params;
   const viaje = useConductorStore((s) => s.historial.find((v) => v.id === viajeId));
   const mapRef = useRef<MapView>(null);
@@ -103,6 +105,7 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
             ref={mapRef}
             style={StyleSheet.absoluteFillObject}
             provider={PROVIDER_GOOGLE}
+        customMapStyle={mapStyle}
             initialRegion={{ ...origen.coordenadas, latitudeDelta: 0.06, longitudeDelta: 0.06 }}
             onMapReady={encuadrar}
             scrollEnabled={false}
