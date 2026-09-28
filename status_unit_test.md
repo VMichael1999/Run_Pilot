@@ -2,6 +2,7 @@
 
 | Modulo | Archivo de test | Estado |
 |--------|----------------|--------|
+| ThemeColors (roles y contraste) | src/theme/__tests__/colors.test.ts | 25 tests, en verde |
 | useAuthStore | pendiente | sin tests |
 | useThemeStore | pendiente | sin tests |
 | LoginScreen | pendiente | sin tests |
