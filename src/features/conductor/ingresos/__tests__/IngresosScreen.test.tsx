@@ -61,7 +61,8 @@ describe('BilleteraScreen', () => {
   it('saldo y movimientos que dicen de que viaje vienen', () => {
     conViajesHoy();
     render(<BilleteraScreen navigation={{} as never} route={{ key: 'b', name: 'Billetera' } as never} />);
-    expect(screen.getByLabelText('Saldo disponible S/ 86.40')).toBeTruthy();
+    // 86.40 - 2.78 (comision del viaje en efectivo) + 10.20 (ganancia del viaje con Yape)
+    expect(screen.getByLabelText('Saldo disponible S/ 93.82')).toBeTruthy();
     expect(screen.getByText('Comisión · San Borja → Surco')).toBeTruthy();
     expect(screen.getByText('− S/ 2.78')).toBeTruthy();
     expect(screen.getByText('Pago digital · Cercado de Lima → Jesús María')).toBeTruthy();

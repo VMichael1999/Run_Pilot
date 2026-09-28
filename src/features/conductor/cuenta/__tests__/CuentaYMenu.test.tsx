@@ -71,16 +71,25 @@ describe('SeleccionarVehiculoScreen', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
-  it('avisa que elegir conecta, y elegir conecta y vuelve', async () => {
+  it('elegir un vehiculo lo deja activo y vuelve, sin conectarse', async () => {
     const goBack = jest.fn();
-    useConductorStore.setState({ isOnline: false });
+    useConductorStore.setState({ isOnline: false, vehiculoId: 'veh-1' });
     render(<SeleccionarVehiculoScreen navigation={{ goBack } as never} route={{} as never} />);
-    expect(screen.getByText(/Al elegirlo te conectas/)).toBeTruthy();
-    expect(screen.getByText('Activo')).toBeTruthy();
+    expect(screen.getByText(/Luego conéctate desde el inicio/)).toBeTruthy();
+    expect(screen.queryByText(/Al elegirlo te conectas/)).toBeNull();
     fireEvent.press(screen.getByLabelText(/^Kia Rio/));
     await act(async () => { jest.advanceTimersByTime(400); });
-    expect(useConductorStore.getState().isOnline).toBe(true);
+    expect(useConductorStore.getState().vehiculoId).toBe('veh-2');
+    expect(useConductorStore.getState().isOnline).toBe(false);
     expect(goBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('Cuenta muestra el vehiculo elegido', () => {
+    jest.useRealTimers();
+    useConductorStore.setState({ vehiculoId: 'veh-3' });
+    render(<CuentaScreen />);
+    expect(screen.getByText('Hyundai Accent')).toBeTruthy();
+    expect(screen.getByText('BSR-688')).toBeTruthy();
   });
 });
 

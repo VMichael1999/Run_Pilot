@@ -12,28 +12,28 @@ import { Weight, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { Duration } from '@theme/motion';
 import { mockConductor } from '../data/mockConductor';
+import { useVehiculoActivo } from './useVehiculoActivo';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'SeleccionarVehiculo'>;
 
 /**
- * Elegir con que vehiculo salir. Como antes, elegir uno conecta al conductor
- * y vuelve al inicio; la pantalla lo dice para que no sorprenda.
+ * Elegir con que vehiculo salir. Solo cambia el vehiculo activo y vuelve;
+ * conectarse es un paso aparte ("Conectarme" en el inicio).
  */
 export function SeleccionarVehiculoScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
-  const setOnline = useConductorStore((s) => s.setOnline);
+  const setVehiculo = useConductorStore((s) => s.setVehiculo);
   const [elegido, setElegido] = useState<string | null>(null);
-  const activo = mockConductor.vehiculo.id;
+  const activo = useVehiculoActivo().id;
 
+  // Elegir solo cambia el vehiculo; conectarse sigue siendo "Conectarme" en el inicio
   const elegir = (id: string) => {
     if (elegido) return;
     setElegido(id);
+    setVehiculo(id);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => {
-      setOnline(true);
-      navigation.goBack();
-    }, Duration.slow);
+    setTimeout(() => navigation.goBack(), Duration.slow);
   };
 
   return (
@@ -41,7 +41,7 @@ export function SeleccionarVehiculoScreen({ navigation }: Props) {
       <AppHeader title="Vehículo" />
       <ScrollView contentContainerStyle={[styles.pad, { paddingBottom: insets.bottom + Spacing['2xl'] }]}>
         <Text style={[Type.body, { color: theme.textMuted }]}>
-          Elige con qué vehículo vas a salir. Al elegirlo te conectas y empiezas a recibir viajes.
+          Elige con qué vehículo vas a salir. Luego conéctate desde el inicio para recibir viajes.
         </Text>
         {mockConductor.vehiculos.map((v) => {
           const sel = elegido === v.id;
@@ -50,7 +50,7 @@ export function SeleccionarVehiculoScreen({ navigation }: Props) {
               key={v.id}
               accessibilityRole="button"
               accessibilityState={{ selected: sel, disabled: !!elegido }}
-              accessibilityLabel={`${v.marca} ${v.modelo} ${v.color} ${v.anio}, placa ${v.placa}${v.id === activo ? ', vehículo activo' : ''}. Conectarme con este vehículo`}
+              accessibilityLabel={`${v.marca} ${v.modelo} ${v.color} ${v.anio}, placa ${v.placa}${v.id === activo ? ', vehículo activo' : ''}. Usar este vehículo`}
               onPress={() => elegir(v.id)}
               style={({ pressed }) => [
                 styles.card,
