@@ -1,39 +1,52 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import { useConductorStore } from '@store/useConductorStore';
-import { AvatarPasajero } from '@shared/components/ui/AvatarPasajero';
 import { mockSolicitudes } from '../data/mockSolicitudes';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppButton, AppTextInput, AvatarPasajero, Chip, StarRating } from '@shared/components/ui';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { Hit, Spacing } from '@theme/spacing';
+import { Duration } from '@theme/motion';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Calificar'>;
 
-const TOTAL_ESTRELLAS = 5;
+/** Etiquetas rapidas. Aun no se envian: el store solo guarda las estrellas. */
+const ETIQUETAS = [
+  'Puntual',
+  'Amable',
+  'Indicó bien el recojo',
+  'Respetuoso con el auto',
+  'Hizo esperar',
+];
+
+const VOLVER_MS = 1200;
 
 export function CalificarScreen({ route, navigation }: Props) {
   const { solicitudId } = route.params;
   const insets = useSafeAreaInsets();
-  const [estrellas, setEstrellas] = useState(0);
+  const theme = useAppTheme();
+  const [estrellas,  setEstrellas]  = useState(0);
+  const [etiquetas,  setEtiquetas]  = useState<string[]>([]);
   const [comentario, setComentario] = useState('');
-  const [enviado, setEnviado]     = useState(false);
+  const [enviado,    setEnviado]    = useState(false);
 
   const solicitudStore         = useConductorStore((s) => s.solicitudActual);
-  const setSolicitudActual      = useConductorStore((s) => s.setSolicitudActual);
-  const actualizarCalificacion  = useConductorStore((s) => s.actualizarCalificacion);
+  const setSolicitudActual     = useConductorStore((s) => s.setSolicitudActual);
+  const actualizarCalificacion = useConductorStore((s) => s.actualizarCalificacion);
 
   // Usar el store como fuente primaria (cubre viajes simulados con id dinamico)
   const solicitud =
@@ -50,236 +63,122 @@ export function CalificarScreen({ route, navigation }: Props) {
   const handleEnviar = () => {
     if (estrellas === 0) return;
     actualizarCalificacion(solicitudId, estrellas);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEnviado(true);
-    setTimeout(irAlHome, 1500);
   };
+
+  useEffect(() => {
+    if (!enviado) return;
+    const t = setTimeout(irAlHome, VOLVER_MS);
+    return () => clearTimeout(t);
+  }, [enviado]);
+
+  const toggle = (e: string) =>
+    setEtiquetas((prev) => (prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]));
 
   if (!pasajero) return null;
 
+  if (enviado) {
+    return (
+      <View style={[styles.done, { backgroundColor: theme.background }]}>
+        <Animated.View entering={FadeIn.duration(Duration.base)} style={styles.doneBody}>
+          <View style={[styles.okc, { backgroundColor: theme.onlineSoft }]}>
+            <Ionicons name="checkmark" size={28} color={theme.online} />
+          </View>
+          <Text accessibilityRole="header" style={[Type.title, styles.center, { color: theme.text }]}>
+            Calificación enviada
+          </Text>
+          <Text style={[Type.body, styles.center, { color: theme.textMuted }]}>
+            Le diste {estrellas} {estrellas === 1 ? 'estrella' : 'estrellas'} a {pasajero.nombre}. Volviendo al inicio.
+          </Text>
+        </Animated.View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.flex, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
         contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: insets.top + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+          styles.pad,
+          { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl + 2 },
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        {enviado ? (
-          <View style={styles.successContainer}>
-            <View style={styles.successIcon}>
-              <Ionicons name="checkmark-circle" size={64} color={Colors.success} />
-            </View>
-            <Text style={styles.successTitle}>¡Gracias!</Text>
-            <Text style={styles.successSubtitle}>Calificación enviada</Text>
+        <View style={styles.pax}>
+          <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={52} />
+          <Text accessibilityRole="header" style={[styles.titulo, { color: theme.text }]}>
+            ¿Cómo fue el viaje con {pasajero.nombre}?
+          </Text>
+        </View>
+
+        <StarRating value={estrellas} onChange={setEstrellas} />
+
+        <View style={styles.block}>
+          <Text style={[Type.label, { color: theme.text }]}>¿Qué destacarías?</Text>
+          <View style={styles.chips}>
+            {ETIQUETAS.map((e) => (
+              <Chip key={e} label={e} selected={etiquetas.includes(e)} onToggle={() => toggle(e)} />
+            ))}
           </View>
-        ) : (
-          <>
-            <Text style={styles.titulo}>Califica al pasajero</Text>
-            <Text style={styles.subtitulo}>
-              ¿Cómo fue tu experiencia con este pasajero?
-            </Text>
+        </View>
 
-            <View style={styles.avatarSection}>
-              <AvatarPasajero fotoUrl={pasajero.fotoUrl} size={96} />
-              <Text style={styles.nombre}>
-                {pasajero.nombre} {pasajero.apellido}
-              </Text>
-              <View style={styles.infoRow}>
-                <Ionicons name="star" size={13} color={Colors.warning} />
-                <Text style={styles.infoText}>
-                  {pasajero.calificacion.toFixed(1)} · {pasajero.totalViajes} viajes
-                </Text>
-              </View>
-            </View>
+        <AppTextInput
+          placeholder="Comentario opcional"
+          accessibilityLabel="Comentario opcional"
+          multiline
+          value={comentario}
+          onChangeText={setComentario}
+          textAlignVertical="top"
+          inputStyle={styles.field}
+        />
 
-            <View style={styles.estrellasContainer}>
-              {Array.from({ length: TOTAL_ESTRELLAS }).map((_, i) => (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => setEstrellas(i + 1)}
-                  activeOpacity={0.7}
-                  style={styles.estrellaBtn}
-                >
-                  <Ionicons
-                    name={i < estrellas ? 'star' : 'star-outline'}
-                    size={40}
-                    color={i < estrellas ? Colors.warning : Colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {estrellas > 0 && (
-              <Text style={styles.etiquetaEstrellas}>
-                {['', 'Muy malo', 'Malo', 'Regular', 'Bueno', 'Excelente'][estrellas]}
-              </Text>
-            )}
-
-            <TextInput
-              style={styles.comentarioInput}
-              placeholder="Comentario opcional..."
-              placeholderTextColor={Colors.textSecondary}
-              multiline
-              numberOfLines={3}
-              value={comentario}
-              onChangeText={setComentario}
-              textAlignVertical="top"
-            />
-
-            <TouchableOpacity
-              style={[
-                styles.enviarBtn,
-                estrellas === 0 && styles.enviarBtnDisabled,
-              ]}
-              onPress={handleEnviar}
-              activeOpacity={0.85}
-              disabled={estrellas === 0}
-            >
-              <Text style={styles.enviarText}>ENVIAR CALIFICACIÓN</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.omitirBtn}
-              onPress={irAlHome}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.omitirText}>Omitir por ahora</Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <AppButton
+          label="Enviar calificación"
+          onPress={handleEnviar}
+          disabled={estrellas === 0}
+          accessibilityHint={estrellas === 0 ? 'Elige primero de 1 a 5 estrellas' : undefined}
+        />
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={irAlHome}
+          style={styles.textBtn}
+          activeOpacity={0.6}
+        >
+          <Text style={[Type.bodyStrong, styles.underline, { color: theme.textMuted }]}>Omitir</Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: Spacing.xl,
-    alignItems: 'center',
-  },
+  flex: { flex: 1 },
+  center: { textAlign: 'center' },
+  pad: { paddingHorizontal: 18, gap: Spacing.lg },
+  pax: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.sm },
   titulo: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize['2xl'],
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: Spacing.xs,
-  },
-  subtitulo: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: Spacing.xl,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#eef2f7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.md,
-  },
-  nombre: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.lg,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  infoText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-  estrellasContainer: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  estrellaBtn: {
-    padding: 4,
-  },
-  etiquetaEstrellas: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    color: Colors.warning,
-    marginBottom: Spacing.xl,
-  },
-  comentarioInput: {
-    width: '100%',
-    minHeight: 90,
-    borderWidth: 1.5,
-    borderColor: Colors.divider,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xl,
-  },
-  enviarBtn: {
-    width: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.lg,
-    alignItems: 'center',
-    ...Shadow.md,
-    marginBottom: Spacing.md,
-  },
-  enviarBtnDisabled: {
-    backgroundColor: Colors.textDisabled,
-  },
-  enviarText: {
-    color: Colors.white,
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    letterSpacing: 0.5,
-  },
-  omitirBtn: {
-    paddingVertical: Spacing.sm,
-  },
-  omitirText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-  successContainer: {
     flex: 1,
+    fontFamily: FontFamily.bold,
+    fontSize: 20,
+    lineHeight: 25,
+    letterSpacing: -0.2,
+  },
+  block: { gap: Spacing.sm + 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  field: { minHeight: 56 },
+  textBtn: { minHeight: Hit.min, alignItems: 'center', justifyContent: 'center' },
+  underline: { textDecorationLine: 'underline' },
+  done: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing['2xl'] },
+  doneBody: { alignItems: 'center', gap: Spacing.md },
+  okc: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: Spacing['3xl'],
-  },
-  successIcon: {
-    marginBottom: Spacing.lg,
-  },
-  successTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize['3xl'],
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  successSubtitle: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
   },
 });

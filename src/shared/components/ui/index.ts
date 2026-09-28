@@ -16,3 +16,5 @@ export { RouteStops } from './RouteStops';
 export { SlideToConfirm } from './SlideToConfirm';
 export { Tag } from './Tag';
 export { SosButton, SOS_TELEFONO } from './SosButton';
+export { Chip } from './Chip';
+export { StarRating } from './StarRating';

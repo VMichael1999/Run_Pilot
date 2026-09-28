@@ -12,6 +12,7 @@
 | geo (distancia, restante, formato) | src/shared/utils/__tests__/geo.test.ts | 11 tests, en verde |
 | ViajeScreen (fases, SOS, llamar, fuga de GPS) | src/features/conductor/viaje/__tests__/ViajeScreen.test.tsx | 9 tests, en verde |
 | format (soles, viajes, tiempo) | src/shared/utils/__tests__/format.test.ts | 9 tests, en verde |
+| CalificarScreen (estrellas, etiquetas, enviar, omitir) | src/features/conductor/calificar/__tests__/CalificarScreen.test.tsx | 3 tests, en verde |
 | LoginScreen | pendiente | sin tests |
 | LoginVerificacionScreen | pendiente | sin tests |
 | SolicitudesScreen | pendiente | sin tests |
