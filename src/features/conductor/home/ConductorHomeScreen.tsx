@@ -22,8 +22,7 @@ import type { LatLng } from '../viaje/services/directionsService';
 import { AppButton, InfoNote, MapButton, MapPill, Plate, StatusDot } from '@shared/components/ui';
 import { formatSoles, haceTiempo, inicioDelDia, pluralViajes } from '@shared/utils/format';
 import { confirmarCerrarSesion } from '@shared/utils/sesion';
-import { useAppTheme, useIsDark } from '@theme/useAppTheme';
-import { MapStyle } from '@theme/mapStyle';
+import { useAppTheme } from '@theme/useAppTheme';
 import { FontFamily, Type } from '@theme/fonts';
 import { Spacing, BorderRadius, Hit, Shadow } from '@theme/spacing';
 import { Duration } from '@theme/motion';
@@ -69,7 +68,6 @@ export function ConductorHomeScreen() {
   const insets      = useSafeAreaInsets();
   const navigation  = useNavigation<Nav>();
   const theme       = useAppTheme();
-  const isDark      = useIsDark();
   const isOnline          = useConductorStore((s) => s.isOnline);
   const historial         = useConductorStore((s) => s.historial);
   const setOnline         = useConductorStore((s) => s.setOnline);
@@ -195,7 +193,6 @@ export function ConductorHomeScreen() {
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
         initialRegion={region}
-        customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
         mapPadding={{ top: insets.top + 100, right: 0, bottom: panelH, left: 0 }}
         showsUserLocation
         showsMyLocationButton={false}

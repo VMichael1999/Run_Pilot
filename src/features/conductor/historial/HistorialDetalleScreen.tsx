@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,12 +9,12 @@ import { useConductorStore } from '@store/useConductorStore';
 import { fetchRoute, type LatLng } from '@features/conductor/viaje/services/directionsService';
 import { AppButton, AppHeader, AvatarPasajero, RouteStops } from '@shared/components/ui';
 import { DestinationMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
+import { RoutePolyline } from '@shared/components/map/RoutePolyline';
 import { desgloseCobro, esEfectivo } from '@shared/utils/cobro';
 import { fechaCorta } from '@shared/utils/fecha';
 import { formatSoles } from '@shared/utils/format';
 import { distanciaRutaKm } from '@shared/utils/geo';
-import { useAppTheme, useIsDark } from '@theme/useAppTheme';
-import { MapStyle } from '@theme/mapStyle';
+import { useAppTheme } from '@theme/useAppTheme';
 import { FontFamily, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
@@ -34,7 +34,6 @@ function referencia(id: string): string {
 export function HistorialDetalleScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
-  const isDark = useIsDark();
   const { viajeId } = route.params;
   const viaje = useConductorStore((s) => s.historial.find((v) => v.id === viajeId));
   const mapRef = useRef<MapView>(null);
@@ -104,7 +103,6 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
             ref={mapRef}
             style={StyleSheet.absoluteFillObject}
             provider={PROVIDER_GOOGLE}
-            customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
             initialRegion={{ ...origen.coordenadas, latitudeDelta: 0.06, longitudeDelta: 0.06 }}
             onMapReady={encuadrar}
             scrollEnabled={false}
@@ -113,9 +111,7 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
             pitchEnabled={false}
             toolbarEnabled={false}
           >
-            {routeCoords.length > 1 && (
-              <Polyline coordinates={routeCoords} strokeColor={theme.route} strokeWidth={4} />
-            )}
+            <RoutePolyline coordinates={routeCoords} />
             <PickupMarker coordinate={origen.coordenadas} />
             <DestinationMarker coordinate={destino.coordenadas} />
           </MapView>

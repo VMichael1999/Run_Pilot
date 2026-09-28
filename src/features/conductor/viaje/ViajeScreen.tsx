@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -14,9 +14,9 @@ import { PanelPago } from './components/PanelPago';
 import { fetchRoute, type LatLng } from './services/directionsService';
 import { AppButton, AvatarPasajero, MapButton, SlideToConfirm, SosButton } from '@shared/components/ui';
 import { DestinationMarker, DriverMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
+import { RoutePolyline } from '@shared/components/map/RoutePolyline';
 import { distanciaRutaKm, formatDistancia, restanteEnRutaKm } from '@shared/utils/geo';
-import { useAppTheme, useIsDark } from '@theme/useAppTheme';
-import { MapStyle } from '@theme/mapStyle';
+import { useAppTheme } from '@theme/useAppTheme';
 import { FontFamily, Type } from '@theme/fonts';
 import { Spacing, BorderRadius, Hit, HitSlop, Shadow } from '@theme/spacing';
 import { Duration, Timing } from '@theme/motion';
@@ -56,7 +56,6 @@ export function ViajeScreen({ route, navigation }: Props) {
   const { solicitudId } = route.params;
   const insets = useSafeAreaInsets();
   const theme  = useAppTheme();
-  const isDark = useIsDark();
   const mapRef = useRef<MapView>(null);
 
   const solicitudActual = useConductorStore((s) => s.solicitudActual);
@@ -213,20 +212,13 @@ export function ViajeScreen({ route, navigation }: Props) {
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
-        customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
         initialRegion={
           origen ? { ...origen.coordenadas, latitudeDelta: 0.02, longitudeDelta: 0.02 } : LIMA_REGION
         }
         showsUserLocation={false}
         toolbarEnabled={false}
       >
-        {routeCoords.length > 1 && (
-          <>
-            {/* Borde para que la ruta se lea sobre cualquier calle */}
-            <Polyline coordinates={routeCoords} strokeColor={theme.routeCase} strokeWidth={10} lineJoin="round" />
-            <Polyline coordinates={routeCoords} strokeColor={theme.route} strokeWidth={5} lineJoin="round" />
-          </>
-        )}
+        <RoutePolyline coordinates={routeCoords} />
         {fase !== 'viaje' && origen && <PickupMarker coordinate={origen.coordenadas} active />}
         {fase === 'viaje' && destino && <DestinationMarker coordinate={destino.coordenadas} />}
         {driverCoord && <DriverMarker coordinate={driverCoord} heading={heading} />}
