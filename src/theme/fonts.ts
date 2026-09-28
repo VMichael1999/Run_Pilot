@@ -51,9 +51,35 @@ export const Type = {
   /** Accion secundaria, texto de apoyo importante. */
   bodyStrong: { fontFamily: FontFamily.semibold, fontSize: 15, lineHeight: 21 },
   body:       { fontFamily: FontFamily.regular, fontSize: 15, lineHeight: 21 },
+  /** Menu lateral, nombre de vehiculo. */
+  menu:       { fontFamily: FontFamily.medium, fontSize: 15, lineHeight: 20 },
+  /** Monto en listas (historial, movimientos). */
+  amount:     { fontFamily: FontFamily.bold, fontSize: 15, lineHeight: 20 },
+  /** Precio en tarjetas del tablero. */
+  priceCard:  { fontFamily: FontFamily.bold, fontSize: 26, lineHeight: 30, letterSpacing: -0.6 },
+  /** Digitos del codigo de verificacion. */
+  otp:        { fontFamily: FontFamily.semibold, fontSize: 28, lineHeight: 34 },
+  /** Teclas del teclado numerico. */
+  key:        { fontFamily: FontFamily.medium, fontSize: 22, lineHeight: 28 },
+  /** Texto dentro de campos grandes (telefono). */
+  field:      { fontFamily: FontFamily.semibold, fontSize: 18, lineHeight: 24 },
+  /** Pregunta de una pantalla (calificar). */
+  question:   { fontFamily: FontFamily.bold, fontSize: 20, lineHeight: 25, letterSpacing: -0.2 },
+  /** Cifra de un indicador (horas, por viaje). */
+  kpi:        { fontFamily: FontFamily.bold, fontSize: 17, lineHeight: 22 },
+  kpiLabel:   { fontFamily: FontFamily.regular, fontSize: 11.5, lineHeight: 15 },
   /** Direcciones y nombres. */
   address:    { fontFamily: FontFamily.medium, fontSize: 14.5, lineHeight: 20 },
   label:      { fontFamily: FontFamily.semibold, fontSize: 14, lineHeight: 19 },
+  /** Filas de desglose. */
+  row:        { fontFamily: FontFamily.regular, fontSize: 14, lineHeight: 19 },
+  /** Titulo de seccion y encabezados de grupo (en oracion normal). */
+  section:    { fontFamily: FontFamily.semibold, fontSize: 13, lineHeight: 18 },
+  /** Chips, hora en listas, datos secundarios destacados. */
+  small:      { fontFamily: FontFamily.medium, fontSize: 13.5, lineHeight: 18 },
+  smallStrong: { fontFamily: FontFamily.semibold, fontSize: 13.5, lineHeight: 18 },
+  /** Notas y subtitulos de cifras. */
+  note:       { fontFamily: FontFamily.regular, fontSize: 13, lineHeight: 18 },
   /** Distancias, tiempos, subtitulos. */
   detail:     { fontFamily: FontFamily.regular, fontSize: 12.5, lineHeight: 17 },
   /** Chips, tags, badges. */
@@ -62,15 +88,3 @@ export const Type = {
 } satisfies Record<string, TextStyle>;
 
 export type TypeRole = keyof typeof Type;
-
-/** @deprecated Usa `Type`. Se mantiene para pantallas aun no migradas. */
-export const FontSize = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
-  xl: 20,
-  '2xl': 24,
-  '3xl': 30,
-  '4xl': 36,
-} as const;

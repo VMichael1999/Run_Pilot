@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   pad: { paddingHorizontal: 18, paddingTop: Spacing.xs, gap: Spacing.lg },
   bal: { gap: 6, paddingVertical: 18, paddingHorizontal: Spacing.lg, borderRadius: BorderRadius.xl },
-  k: { fontFamily: FontFamily.medium, fontSize: 13.5, opacity: 0.75 },
-  note: { fontFamily: FontFamily.regular, fontSize: 12.5, lineHeight: 17, opacity: 0.75 },
+  k: { ...Type.small, opacity: 0.75 },
+  note: { ...Type.detail, opacity: 0.75 },
   two: { flexDirection: 'row', gap: Spacing.sm + 2, marginTop: Spacing.sm },
   b: {
     flex: 1,
@@ -125,6 +125,6 @@ const styles = StyleSheet.create({
   },
   bOutline: { borderWidth: 1.5, opacity: 0.9 },
   secH: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: Spacing.xs },
-  secT: { fontFamily: FontFamily.semibold, fontSize: 13 },
+  secT: { ...Type.section },
   empty: { paddingVertical: Spacing.lg },
 });

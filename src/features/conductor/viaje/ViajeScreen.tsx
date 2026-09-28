@@ -365,12 +365,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     ...Shadow.raise,
   },
-  destK: {
-    fontFamily: FontFamily.semibold,
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: Spacing.xxs,
-  },
+  destK: { ...Type.tag, marginBottom: Spacing.xxs },
   destT: { alignItems: 'flex-end' },
   destFig: { minWidth: 64, textAlign: 'right' },
 

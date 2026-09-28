@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily } from '@theme/fonts';
+import { FontFamily, Type } from '@theme/fonts';
 import { Spacing } from '@theme/spacing';
 
 interface AppSectionTitleProps {
@@ -26,9 +26,7 @@ export function AppSectionTitle({ children, muted = true, style }: AppSectionTit
 
 const styles = StyleSheet.create({
   title: {
-    fontFamily: FontFamily.semibold,
-    fontSize: 13,
-    lineHeight: 18,
+    ...Type.section,
     paddingTop: Spacing.xs,
     marginBottom: Spacing.sm,
   },

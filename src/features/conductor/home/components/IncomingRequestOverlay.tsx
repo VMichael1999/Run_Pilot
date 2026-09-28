@@ -236,11 +236,7 @@ const styles = StyleSheet.create({
   tags: { flexDirection: 'row', gap: 6 },
   figures: { gap: 6 },
   price: { ...Type.price },
-  eta: {
-    fontFamily: FontFamily.semibold,
-    fontSize: 15,
-    lineHeight: 20,
-  },
+  eta: { ...Type.bodyStrong },
   etaMuted: { fontFamily: FontFamily.medium },
   pax: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },

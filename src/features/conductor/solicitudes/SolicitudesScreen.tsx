@@ -109,12 +109,12 @@ export function SolicitudesScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { paddingHorizontal: 18 },
-  sub: { fontFamily: FontFamily.semibold, fontSize: 13, marginBottom: Spacing.md, marginTop: Spacing.xs },
+  sub: { ...Type.section, marginBottom: Spacing.md, marginTop: Spacing.xs },
   card: { borderRadius: BorderRadius.lg, borderWidth: 1, padding: 14, gap: Spacing.sm + 2 },
   pressed: { opacity: 0.7 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  precio: { fontFamily: FontFamily.bold, fontSize: 26, lineHeight: 30, letterSpacing: -0.6 },
-  eta: { fontFamily: FontFamily.semibold, fontSize: 14, lineHeight: 19 },
+  precio: { ...Type.priceCard },
+  eta: { ...Type.label },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pax: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   nota: {

@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     borderWidth: 1.5,
   },
-  text: { fontFamily: FontFamily.bold, fontSize: 13 },
+  text: { ...Type.section, fontFamily: FontFamily.bold },
   tip: {
     position: 'absolute',
     top: 44,

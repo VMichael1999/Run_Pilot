@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: 18, paddingTop: Spacing.xs, gap: Spacing.lg },
   perfil: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   av: { width: 64, height: 64, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  // Medida propia del avatar de 64 dp
   avText: { fontFamily: FontFamily.bold, fontSize: 22 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   group: { borderRadius: BorderRadius.lg, borderWidth: 1 },

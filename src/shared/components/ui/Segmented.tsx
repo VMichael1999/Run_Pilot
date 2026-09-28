@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily } from '@theme/fonts';
+import { FontFamily, Type } from '@theme/fonts';
 import { BorderRadius, Shadow } from '@theme/spacing';
 
 interface Props<T extends string> {
@@ -43,5 +43,5 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   on: { ...Shadow.sm },
-  text: { fontFamily: FontFamily.semibold, fontSize: 14 },
+  text: { ...Type.label },
 });

@@ -100,10 +100,10 @@ export function ServiciosProgramadosScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { paddingHorizontal: 18 },
-  secT: { fontFamily: FontFamily.semibold, fontSize: 13, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
+  secT: { ...Type.section, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
   card: { borderRadius: BorderRadius.lg, borderWidth: 1, padding: 14, gap: Spacing.sm + 2 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  precio: { fontFamily: FontFamily.bold, fontSize: 16 },
+  precio: { ...Type.heading, fontFamily: FontFamily.bold },
   empty: { gap: Spacing.sm, paddingTop: Spacing.xl },
 });

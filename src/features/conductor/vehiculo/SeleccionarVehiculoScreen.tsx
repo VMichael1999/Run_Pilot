@@ -93,5 +93,5 @@ const styles = StyleSheet.create({
   },
   cardSel: { borderWidth: 2 },
   pressed: { opacity: 0.7 },
-  nombre: { fontFamily: FontFamily.semibold, fontSize: 15 },
+  nombre: { ...Type.bodyStrong },
 });

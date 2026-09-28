@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
   },
-  k: { fontFamily: FontFamily.semibold, fontSize: 14, lineHeight: 19 },
+  k: { ...Type.label },
   hint: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rows: { borderRadius: BorderRadius.lg, borderWidth: 1 },
   row: {
@@ -173,9 +173,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   rowSep: { borderTopWidth: 1 },
-  rowText: { flex: 1, fontFamily: FontFamily.regular, fontSize: 14, lineHeight: 19 },
-  rowVal: { fontFamily: FontFamily.semibold, fontSize: 14, lineHeight: 19 },
-  total: { fontSize: 16 },
+  rowText: { flex: 1, ...Type.row },
+  rowVal: { ...Type.label },
+  total: { fontSize: Type.heading.fontSize, lineHeight: Type.heading.lineHeight },
   textBtn: { minHeight: Hit.min, alignItems: 'center', justifyContent: 'center' },
   underline: { textDecorationLine: 'underline' },
 });

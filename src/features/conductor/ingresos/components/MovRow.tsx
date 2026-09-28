@@ -42,6 +42,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   flex: { flex: 1, gap: 2 },
-  titulo: { fontFamily: FontFamily.semibold, fontSize: 14, lineHeight: 19 },
-  monto: { fontFamily: FontFamily.bold, fontSize: 15, textAlign: 'right' },
+  titulo: { ...Type.label },
+  monto: { ...Type.amount, textAlign: 'right' },
 });

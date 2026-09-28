@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
   rows: { borderRadius: BorderRadius.lg, borderWidth: 1 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md, paddingVertical: Spacing.md, paddingHorizontal: 14 },
   rowSep: { borderTopWidth: 1 },
-  rowText: { flex: 1, fontFamily: FontFamily.regular, fontSize: 14, lineHeight: 19 },
-  rowStrong: { fontFamily: FontFamily.semibold, fontSize: 14, lineHeight: 19 },
-  total: { fontSize: 16 },
+  rowText: { flex: 1, ...Type.row },
+  rowStrong: { ...Type.label },
+  total: { fontSize: Type.heading.fontSize, lineHeight: Type.heading.lineHeight },
   missing: { paddingHorizontal: 18, gap: Spacing.sm, paddingTop: Spacing.xl },
 });

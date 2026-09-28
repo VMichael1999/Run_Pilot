@@ -343,10 +343,7 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
   },
-  earnText: {
-    fontFamily: FontFamily.regular,
-    fontSize: 13.5,
-  },
+  earnText: { ...Type.small, fontFamily: FontFamily.regular },
   earnBold: { fontFamily: FontFamily.bold },
 
   panel: {

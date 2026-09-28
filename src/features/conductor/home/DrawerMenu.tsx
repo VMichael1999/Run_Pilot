@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Plate } from '@shared/components/ui';
 import { useAppTheme } from '@theme/useAppTheme';
+import { Palette } from '@theme/colors';
 import { FontFamily, Type } from '@theme/fonts';
 import { BorderRadius, Hit, Spacing } from '@theme/spacing';
 import { Duration } from '@theme/motion';
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     paddingHorizontal: 14,
     gap: 14,
-    shadowColor: '#000',
+    shadowColor: Palette.black,
     shadowOffset: { width: 8, height: 0 },
     shadowOpacity: 0.45,
     shadowRadius: 30,
@@ -169,14 +170,15 @@ const styles = StyleSheet.create({
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2, paddingHorizontal: Spacing.xs },
   logo: { width: 40, height: 40, borderRadius: 10 },
-  brandText: { fontFamily: FontFamily.bold, fontSize: 17, letterSpacing: -0.2 },
+  brandText: { ...Type.kpi, letterSpacing: -0.2 },
   prof: { padding: Spacing.md, borderRadius: BorderRadius.lg, gap: Spacing.sm + 2 },
   pressed: { opacity: 0.7 },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
   av: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  // Medida propia del avatar de 40 dp
   avText: { fontFamily: FontFamily.bold, fontSize: 14 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  veh: { fontFamily: FontFamily.semibold, fontSize: 13.5 },
+  veh: { ...Type.smallStrong },
   menu: { paddingBottom: Spacing.sm },
   item: {
     flexDirection: 'row',
@@ -186,6 +188,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.md,
   },
-  itemLabel: { flex: 1, fontFamily: FontFamily.medium, fontSize: 15 },
+  itemLabel: { flex: 1, ...Type.menu },
   badge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: BorderRadius.full },
 });

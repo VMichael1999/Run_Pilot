@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     justifyContent: 'center',
   },
-  fieldText: { fontFamily: FontFamily.semibold, fontSize: 18 },
+  fieldText: { ...Type.field },
   input: { letterSpacing: 0.4, paddingVertical: Spacing.md },
   legal: { textAlign: 'center' },
   link: { textDecorationLine: 'underline' },
