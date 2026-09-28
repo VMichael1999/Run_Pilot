@@ -1,96 +1,96 @@
-import React from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
-import { AppHeader } from '@shared/components/ui/AppHeader';
-import { useThemeStore } from '@store/useThemeStore';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppButton, AppHeader, AppSectionTitle, Segmented } from '@shared/components/ui';
+import { useThemeStore, type ThemePreference } from '@store/useThemeStore';
+import { useAppTheme } from '@theme/useAppTheme';
+import { Palette } from '@theme/colors';
+import { Type } from '@theme/fonts';
+import { BorderRadius, Hit, Spacing } from '@theme/spacing';
+import appConfig from '../../../../app.json';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Configuracion'>;
 
+const APARIENCIA: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: 'Automático' },
+  { value: 'light', label: 'Claro' },
+  { value: 'dark', label: 'Oscuro' },
+];
+
 export function ConfiguracionScreen({ navigation }: Props) {
-  const isDark = useThemeStore((s) => s.isDark);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+  const preference = useThemeStore((s) => s.preference);
+  const setPreference = useThemeStore((s) => s.setPreference);
+  // Aun no se guarda en ningun lado: no hay backend de notificaciones
+  const [avisos, setAvisos] = useState(true);
 
   return (
-    <View style={styles.container}>
-      <AppHeader title="Configuracion" onBack={() => navigation.goBack()} />
-
-      <View style={styles.content}>
-        <Text style={styles.seccionLabel}>Apariencia</Text>
-
-        <View style={styles.grupo}>
-          <View style={styles.fila}>
-            <Text style={styles.filaLabel}>Modo oscuro</Text>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: Colors.divider, true: Colors.primary }}
-              thumbColor={Colors.white}
-            />
-          </View>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
+      <AppHeader title="Configuración" onBack={() => navigation.goBack()} />
+      <ScrollView contentContainerStyle={[styles.pad, { paddingBottom: insets.bottom + Spacing['2xl'] }]}>
+        <View>
+          <AppSectionTitle>Apariencia</AppSectionTitle>
+          <Segmented options={APARIENCIA} value={preference} onChange={setPreference} />
+          <Text style={[Type.caption, styles.hint, { color: theme.textMuted }]}>
+            {preference === 'system'
+              ? 'Sigue el modo claro u oscuro de tu teléfono.'
+              : preference === 'dark'
+                ? 'Siempre oscuro: menos brillo manejando de noche.'
+                : 'Siempre claro: se lee mejor a pleno sol.'}
+          </Text>
         </View>
 
-        <Text style={styles.seccionLabel}>Notificaciones</Text>
-
-        <View style={styles.grupo}>
-          <View style={styles.fila}>
-            <View>
-              <Text style={styles.filaLabel}>Nuevas solicitudes</Text>
-              <Text style={styles.filaSubtitulo}>Recibe alertas de pasajeros cercanos</Text>
+        <View>
+          <AppSectionTitle>Notificaciones</AppSectionTitle>
+          <View style={[styles.group, { backgroundColor: theme.surface, borderColor: theme.divider }]}>
+            <View style={styles.fila}>
+              <View style={styles.flex}>
+                <Text style={[Type.label, { color: theme.text }]}>Nuevas solicitudes</Text>
+                <Text style={[Type.caption, { color: theme.textMuted }]}>Aviso cuando llega un viaje cerca de ti</Text>
+              </View>
+              <Switch
+                accessibilityLabel="Avisos de nuevas solicitudes"
+                value={avisos}
+                onValueChange={setAvisos}
+                trackColor={{ false: theme.divider, true: theme.online }}
+                thumbColor={Palette.white}
+              />
             </View>
-            <Switch
-              value={true}
-              onValueChange={() => {}}
-              trackColor={{ false: Colors.divider, true: Colors.primary }}
-              thumbColor={Colors.white}
-            />
           </View>
         </View>
-      </View>
+
+        {__DEV__ && (
+          <AppButton
+            label="Catálogo de componentes (desarrollo)"
+            variant="ghost"
+            size="md"
+            onPress={() => navigation.navigate('Catalogo')}
+          />
+        )}
+
+        <Text style={[Type.caption, styles.version, { color: theme.textMuted }]}>
+          Run Pilot {appConfig.expo.version}
+        </Text>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.backgroundLight },
-  content: {
-    padding: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  seccionLabel: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  grupo: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    ...Shadow.sm,
-  },
+  flex: { flex: 1 },
+  pad: { paddingHorizontal: 18, paddingTop: Spacing.xs, gap: Spacing.xl },
+  hint: { marginTop: Spacing.sm },
+  group: { borderRadius: BorderRadius.lg, borderWidth: 1 },
   fila: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+    minHeight: Hit.action,
+    paddingHorizontal: 14,
     paddingVertical: Spacing.md,
   },
-  filaLabel: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-  },
-  filaSubtitulo: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
+  version: { textAlign: 'center' },
 });

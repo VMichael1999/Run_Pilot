@@ -1,29 +1,43 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@store/useAuthStore';
 import type { LoginVerificacionProps } from '@navigation/types';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
+import { formatTelefono } from '@shared/utils/format';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Hit, HitSlop, Spacing } from '@theme/spacing';
 
 const RESEND_SECONDS = 30;
+const LARGO = 4;
 
-const keypadRows = [
-  ['1', '2', '3'],
-  ['4', '5', '6'],
-  ['7', '8', '9'],
-  ['back', '0', 'empty'],
-] as const;
+const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'blank', '0', 'back'] as const;
+
+/** Cursor que parpadea en la casilla activa (sin parpadeo con movimiento reducido). */
+function Cursor({ color }: { color: string }) {
+  const reduced = useReducedMotion();
+  const o = useSharedValue(1);
+  React.useEffect(() => {
+    if (reduced) return;
+    o.value = withRepeat(withSequence(withTiming(1, { duration: 500 }), withTiming(0, { duration: 0 }), withTiming(0, { duration: 500 })), -1);
+  }, [reduced, o]);
+  const style = useAnimatedStyle(() => ({ opacity: o.value }));
+  return <Animated.View style={[styles.cursor, { backgroundColor: color }, style]} />;
+}
 
 export function LoginVerificacionScreen({ route, navigation }: LoginVerificacionProps) {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const { phone, countryCode } = route.params;
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
 
@@ -31,7 +45,7 @@ export function LoginVerificacionScreen({ route, navigation }: LoginVerificacion
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [resendSeconds, setResendSeconds] = React.useState(RESEND_SECONDS);
-  const shakeAnim = React.useRef(new Animated.Value(0)).current;
+  const shake = useSharedValue(0);
 
   React.useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -40,31 +54,34 @@ export function LoginVerificacionScreen({ route, navigation }: LoginVerificacion
   }, [resendSeconds]);
 
   React.useEffect(() => {
-    if (code.length === 4) {
+    if (code.length === LARGO) {
       void submitCode();
     }
   }, [code]);
 
+  // Error: la fila tiembla y el telefono vibra
   React.useEffect(() => {
     if (!error) return;
-    Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 8, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
-    ]).start();
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    shake.value = withSequence(
+      withTiming(10, { duration: 60 }),
+      withTiming(-10, { duration: 60 }),
+      withTiming(8, { duration: 60 }),
+      withTiming(-8, { duration: 60 }),
+      withTiming(0, { duration: 60 }),
+    );
   }, [error]);
+  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
 
   const submitCode = async () => {
-    if (code.length !== 4 || isLoading) return;
+    if (code.length !== LARGO || isLoading) return;
     setIsLoading(true);
     setError('');
     try {
       // TODO: Llamar al servicio de verificacion
       setAuthenticated('mock-token');
     } catch {
-      setError('Codigo incorrecto. Intenta de nuevo.');
+      setError('Código incorrecto. Revisa el SMS e inténtalo de nuevo.');
       setCode('');
     } finally {
       setIsLoading(false);
@@ -72,7 +89,8 @@ export function LoginVerificacionScreen({ route, navigation }: LoginVerificacion
   };
 
   const handleDigitPress = (digit: string) => {
-    if (isLoading || code.length >= 4) return;
+    if (isLoading || code.length >= LARGO) return;
+    if (error) setError('');
     setCode(`${code}${digit}`);
   };
 
@@ -88,271 +106,149 @@ export function LoginVerificacionScreen({ route, navigation }: LoginVerificacion
     setError('');
   };
 
+  const telefono = formatTelefono(phone, countryCode);
+  const mmss = `0:${String(resendSeconds).padStart(2, '0')}`;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, paddingTop: insets.top + Spacing.sm, paddingBottom: insets.bottom + 22 },
+      ]}
+    >
+      <View style={styles.top}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Volver y cambiar el número"
+          onPress={() => navigation.goBack()}
+          hitSlop={HitSlop}
+          style={[styles.back, { borderColor: theme.divider }]}
+        >
+          <Ionicons name="arrow-back" size={22} color={theme.text} />
         </TouchableOpacity>
-      </View>
 
-      <View style={styles.textBlock}>
-        <Text style={styles.title}>Verificacion</Text>
-        <Text style={styles.subtitle}>
-          Ingresa el codigo enviado a{' '}
-          <Text style={styles.phone}>{countryCode} {phone}</Text>
-        </Text>
-      </View>
+        <View style={styles.textBlock}>
+          <Text accessibilityRole="header" style={[Type.title, { color: theme.text }]}>
+            Escribe el código que enviamos al {telefono}
+          </Text>
+          <Text style={[Type.detail, { color: theme.textMuted }]}>Llega por SMS en unos segundos.</Text>
+        </View>
 
-      <Animated.View style={[styles.otpRow, { transform: [{ translateX: shakeAnim }] }]}>
-        {[0, 1, 2, 3].map((index) => {
-          const digit = code[index];
-          const isActive = index === code.length && !isLoading;
-          const hasError = !!error;
-          return (
-            <View
-              key={index}
-              style={[
-                styles.otpBox,
-                digit && styles.otpBoxFilled,
-                isActive && styles.otpBoxActive,
-                hasError && styles.otpBoxError,
-              ]}
-            >
-              {digit ? (
-                <View style={styles.otpDot} />
-              ) : isActive ? (
-                <View style={styles.otpCursor} />
-              ) : null}
+        <Animated.View
+          style={[styles.otpRow, shakeStyle]}
+          accessible
+          accessibilityLabel={`Código de verificación, ${code.length} de ${LARGO} dígitos`}
+        >
+          {Array.from({ length: LARGO }).map((_, index) => {
+            const digit = code[index];
+            const activa = index === code.length && !isLoading;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.otpBox,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: error ? theme.danger : activa ? theme.text : theme.divider,
+                  },
+                ]}
+              >
+                {digit ? (
+                  <Text style={[styles.otpDigit, { color: theme.text }]}>{digit}</Text>
+                ) : activa ? (
+                  <Cursor color={theme.text} />
+                ) : null}
+              </View>
+            );
+          })}
+        </Animated.View>
+
+        <View style={styles.feedback}>
+          {error ? (
+            <Text accessibilityLiveRegion="assertive" style={[Type.detail, { color: theme.danger }]}>{error}</Text>
+          ) : resendSeconds > 0 ? (
+            // Fila aparte para dar ancho fijo al contador (sin cifras tabulares)
+            <View style={styles.timerRow} accessible accessibilityLabel={`Reenviar código en ${resendSeconds} segundos`}>
+              <Text style={[Type.detail, { color: theme.textMuted }]}>Reenviar código en </Text>
+              <Text style={[Type.detail, styles.timer, { color: theme.text }]}>{mmss}</Text>
             </View>
-          );
-        })}
-      </Animated.View>
-
-      <View style={styles.feedbackRow}>
-        {error ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : (
-          <TouchableOpacity onPress={handleResend} disabled={resendSeconds > 0} activeOpacity={0.7}>
-            <Text style={[styles.resend, resendSeconds > 0 && styles.resendDisabled]}>
-              {resendSeconds > 0
-                ? `Reenviar codigo en ${resendSeconds}s`
-                : 'No lo recibiste? Reenviar'}
-            </Text>
-          </TouchableOpacity>
-        )}
+          ) : (
+            <TouchableOpacity accessibilityRole="button" onPress={handleResend} style={styles.resendBtn}>
+              <Text style={[styles.resend, { color: theme.text }]}>Reenviar código</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.keypad}>
-        {keypadRows.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.keypadRow}>
-            {row.map((key) => {
-              if (key === 'empty') {
-                return <View key={key} style={styles.keypadSpacer} />;
-              }
-              if (key === 'back') {
-                return (
-                  <TouchableOpacity key={key} style={styles.keyBtn} onPress={handleBackspace} activeOpacity={0.6}>
-                    <Ionicons name="backspace-outline" size={24} color={Colors.textPrimary} />
-                  </TouchableOpacity>
-                );
-              }
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.keyBtn, styles.digitBtn]}
-                  onPress={() => handleDigitPress(key)}
-                  activeOpacity={0.7}
-                  disabled={isLoading}
-                >
-                  <Text style={styles.digitText}>{key}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        ))}
+        {teclas.map((key) => {
+          if (key === 'blank') return <View key={key} style={styles.key} />;
+          if (key === 'back') {
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                accessibilityLabel="Borrar"
+                onPress={handleBackspace}
+                disabled={isLoading}
+                style={({ pressed }) => [styles.key, styles.keyCenter, pressed && { backgroundColor: theme.divider }]}
+              >
+                <Ionicons name="backspace-outline" size={24} color={theme.text} />
+              </Pressable>
+            );
+          }
+          return (
+            <Pressable
+              key={key}
+              accessibilityRole="button"
+              accessibilityLabel={key}
+              onPress={() => handleDigitPress(key)}
+              disabled={isLoading}
+              style={({ pressed }) => [
+                styles.key,
+                styles.keyCenter,
+                { backgroundColor: pressed ? theme.divider : theme.surface },
+              ]}
+            >
+              <Text style={[styles.keyText, { color: theme.text }]}>{key}</Text>
+            </Pressable>
+          );
+        })}
       </View>
-
-      <TouchableOpacity
-        style={[styles.verifyBtn, (code.length !== 4 || isLoading) && styles.verifyBtnDisabled]}
-        onPress={submitCode}
-        activeOpacity={0.85}
-        disabled={code.length !== 4 || isLoading}
-      >
-        <Text style={styles.verifyBtnText}>{isLoading ? 'Verificando...' : 'Verificar'}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 28,
-  },
-  header: {
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: Colors.white,
+  container: { flex: 1, paddingHorizontal: 18, justifyContent: 'space-between' },
+  top: { gap: 18 },
+  back: {
+    width: Hit.control,
+    height: Hit.control,
+    borderRadius: BorderRadius.control,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 3,
   },
-  textBlock: {
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 28,
-  },
-  title: {
-    fontSize: 26,
-    fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  phone: {
-    fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
-  },
-  otpRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 14,
-    marginBottom: 16,
-  },
+  textBlock: { gap: 6 },
+  otpRow: { flexDirection: 'row', gap: Spacing.sm + 2 },
   otpBox: {
-    width: 60,
-    height: 68,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  otpBoxActive: {
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  otpBoxFilled: {
-    borderColor: Colors.primary,
-    backgroundColor: '#f0f4ff',
-  },
-  otpBoxError: {
-    borderColor: Colors.error,
-    backgroundColor: '#fff5f5',
-  },
-  otpDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: Colors.primary,
-  },
-  otpCursor: {
-    width: 2,
-    height: 28,
-    borderRadius: 1,
-    backgroundColor: Colors.primary,
-    opacity: 0.7,
-  },
-  feedbackRow: {
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  error: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    color: Colors.error,
-    textAlign: 'center',
-  },
-  resend: {
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.regular,
-    color: Colors.primary,
-    textDecorationLine: 'underline',
-  },
-  resendDisabled: {
-    color: Colors.textSecondary,
-    textDecorationLine: 'none',
-  },
-  keypad: {
-    gap: 10,
-    marginBottom: 20,
-  },
-  keypadRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  keyBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    flex: 1,
+    height: 64,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  digitBtn: {
-    backgroundColor: Colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  keypadSpacer: {
-    width: 72,
-    height: 72,
-  },
-  digitText: {
-    fontSize: 26,
-    fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
-  },
-  verifyBtn: {
-    minHeight: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  verifyBtnDisabled: {
-    opacity: 0.4,
-  },
-  verifyBtnText: {
-    color: Colors.white,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.bold,
-    letterSpacing: 0.5,
-  },
+  otpDigit: { ...Type.otp },
+  cursor: { width: 2, height: 28, borderRadius: 1 },
+  feedback: { minHeight: Hit.min, justifyContent: 'center' },
+  timerRow: { flexDirection: 'row', alignItems: 'baseline' },
+  timer: { fontFamily: FontFamily.semibold, minWidth: 34 },
+  resendBtn: { minHeight: Hit.min, justifyContent: 'center', alignSelf: 'flex-start' },
+  resend: { ...Type.label, textDecorationLine: 'underline' },
+  keypad: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  key: { width: '31.5%', flexGrow: 1, height: 54, borderRadius: BorderRadius.control },
+  keyCenter: { alignItems: 'center', justifyContent: 'center' },
+  keyText: { ...Type.key },
 });

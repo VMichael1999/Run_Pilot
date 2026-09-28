@@ -6,7 +6,7 @@ export const mockSolicitudes: Solicitud[] = [
     pasajero: {
       id: 'p-001',
       nombre: 'Carlos',
-      apellido: 'Ramirez',
+      apellido: 'Ramírez',
       calificacion: 4.8,
       totalViajes: 127,
       telefono: '+51987654321',
@@ -16,7 +16,7 @@ export const mockSolicitudes: Solicitud[] = [
       {
         id: 'stop-001-a',
         direccion: 'Av. Javier Prado Este 2465, San Borja',
-        notas: 'Frente al Banco de la Nacion',
+        notas: 'Frente al Banco de la Nación',
         distanciaKm: 1.2,
         duracionMin: 4,
         coordenadas: { latitude: -12.0864, longitude: -77.0011 },
@@ -40,7 +40,7 @@ export const mockSolicitudes: Solicitud[] = [
     id: 'sol-002',
     pasajero: {
       id: 'p-002',
-      nombre: 'Maria',
+      nombre: 'María',
       apellido: 'Torres',
       calificacion: 4.5,
       totalViajes: 43,
@@ -50,7 +50,7 @@ export const mockSolicitudes: Solicitud[] = [
     paradas: [
       {
         id: 'stop-002-a',
-        direccion: 'Jr. de la Union 840, Cercado de Lima',
+        direccion: 'Jr. de la Unión 840, Cercado de Lima',
         distanciaKm: 2.8,
         duracionMin: 9,
         coordenadas: { latitude: -12.0528, longitude: -77.0296 },
@@ -58,7 +58,7 @@ export const mockSolicitudes: Solicitud[] = [
       },
       {
         id: 'stop-002-b',
-        direccion: 'Av. Brasil 2000, Jesus Maria',
+        direccion: 'Av. Brasil 2000, Jesús María',
         coordenadas: { latitude: -12.0748, longitude: -77.0517 },
         esOrigen: false,
       },
@@ -93,7 +93,7 @@ export const mockSolicitudes: Solicitud[] = [
       },
       {
         id: 'stop-003-b',
-        direccion: 'Aeropuerto Internacional Jorge Chavez, Callao',
+        direccion: 'Aeropuerto Internacional Jorge Chávez, Callao',
         coordenadas: { latitude: -12.0219, longitude: -77.1143 },
         esOrigen: false,
       },

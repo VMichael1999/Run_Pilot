@@ -1,78 +1,49 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
-import { AppHeader } from '@shared/components/ui/AppHeader';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppButton, AppHeader, RouteStops, Tag } from '@shared/components/ui';
+import { esEfectivo } from '@shared/utils/cobro';
+import { hora, tituloDia } from '@shared/utils/fecha';
+import { formatSoles, inicioDelDia } from '@shared/utils/format';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Spacing } from '@theme/spacing';
+import { mockServicios, type EstadoServicio, type ServicioProgramado } from '../data/mockServicios';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'ServiciosProgramados'>;
 
-type EstadoServicio = 'ACEPTADO' | 'PENDIENTE' | 'COMPLETADO';
-
-interface ServicioProgramado {
-  id: string;
-  origen: string;
-  destino: string;
-  fecha: string;
-  estado: EstadoServicio;
-}
-
-const MOCK_SERVICIOS: ServicioProgramado[] = [
-  {
-    id: '1',
-    origen:  'Granadillas, La Molina, Peru',
-    destino: 'Av. Circunvalacion del Golf los Incas 134, Santiago de Surco',
-    fecha:   '24/4/2026 12:51 p. m.',
-    estado:  'ACEPTADO',
-  },
-  {
-    id: '2',
-    origen:  'Av. Javier Prado Este 4200, San Borja',
-    destino: 'Aeropuerto Internacional Jorge Chavez',
-    fecha:   '25/4/2026 08:00 a. m.',
-    estado:  'PENDIENTE',
-  },
-];
-
-const ESTADO_COLORES: Record<EstadoServicio, string> = {
-  ACEPTADO:   Colors.success,
-  PENDIENTE:  Colors.warning,
-  COMPLETADO: Colors.textSecondary,
+const ESTADO: Record<EstadoServicio, { label: string; tone: 'success' | 'signal' | 'neutral' }> = {
+  aceptado:   { label: 'Confirmado', tone: 'success' },
+  pendiente:  { label: 'Por confirmar', tone: 'signal' },
+  completado: { label: 'Completado', tone: 'neutral' },
 };
 
-function ServicioItem({ item }: { item: ServicioProgramado }) {
-  return (
-    <View style={styles.card}>
-      <View style={styles.ruta}>
-        <View style={styles.rutaLeft}>
-          <View style={styles.dotOrigen} />
-          <View style={styles.rutaLinea} />
-          <View style={styles.dotDestino} />
-        </View>
-        <View style={styles.rutaTextos}>
-          <Text style={styles.rutaDireccion} numberOfLines={1}>
-            {item.origen}
-          </Text>
-          <View style={{ height: Spacing.md }} />
-          <Text style={styles.rutaDireccion} numberOfLines={1}>
-            {item.destino}
-          </Text>
-        </View>
-      </View>
+/** "Mañana" en lugar de un nombre de dia para lo que viene. */
+function tituloProximo(ms: number, ahora: number): string {
+  const dias = Math.round((inicioDelDia(ms) - inicioDelDia(ahora)) / 86_400_000);
+  if (dias === 1) return 'Mañana';
+  return tituloDia(ms, ahora);
+}
 
-      <View style={styles.cardFooter}>
-        <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
-        <Text style={styles.fechaText}>{item.fecha}</Text>
-        <TouchableOpacity style={styles.estadoChip} activeOpacity={0.8}>
-          <Text style={[styles.estadoText, { color: ESTADO_COLORES[item.estado] }]}>
-            {item.estado}
-          </Text>
-          <Ionicons name="chevron-forward" size={13} color={ESTADO_COLORES[item.estado]} />
-        </TouchableOpacity>
+function ServicioCard({ item, ms }: { item: ServicioProgramado; ms: number }) {
+  const theme = useAppTheme();
+  const estado = ESTADO[item.estado];
+  return (
+    <View
+      style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.divider }]}
+      accessible
+      accessibilityLabel={`${hora(ms)}, ${estado.label}. Desde ${item.origen} hasta ${item.destino}. ${formatSoles(item.precio)}, ${item.metodoPago}`}
+    >
+      <View style={styles.top}>
+        <Text style={[Type.figure, { color: theme.text }]}>{hora(ms)}</Text>
+        <Tag label={estado.label} tone={estado.tone} />
+      </View>
+      <RouteStops origen={{ direccion: item.origen }} destino={{ direccion: item.destino }} />
+      <View style={styles.bottom}>
+        <Text style={[styles.precio, { color: theme.text }]}>{formatSoles(item.precio)}</Text>
+        <Tag label={item.metodoPago} tone={esEfectivo(item.metodoPago) ? 'cash' : 'digital'} />
       </View>
     </View>
   );
@@ -80,21 +51,45 @@ function ServicioItem({ item }: { item: ServicioProgramado }) {
 
 export function ServiciosProgramadosScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+
+  const secciones = useMemo(() => {
+    const ahora = Date.now();
+    const hoy = inicioDelDia(ahora);
+    const conFecha = mockServicios.map((s) => ({ ...s, ms: hoy + s.enMin * 60_000 }));
+    const proximos = conFecha.filter((s) => s.estado !== 'completado').sort((a, b) => a.ms - b.ms);
+    const pasados = conFecha.filter((s) => s.estado === 'completado').sort((a, b) => b.ms - a.ms);
+    // Proximos agrupados por dia; los completados al final en su propio grupo
+    const grupos = new Map<string, typeof conFecha>();
+    for (const s of proximos) {
+      const k = tituloProximo(s.ms, ahora);
+      grupos.set(k, [...(grupos.get(k) ?? []), s]);
+    }
+    const out = [...grupos.entries()].map(([titulo, data]) => ({ titulo, data }));
+    if (pasados.length) out.push({ titulo: 'Completados', data: pasados });
+    return out;
+  }, []);
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      <AppHeader title="Servicios Programados" onBack={() => navigation.goBack()} />
-
-      <FlatList
-        data={MOCK_SERVICIOS}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.lista}
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
+      <AppHeader title="Servicios programados" onBack={() => navigation.goBack()} />
+      <SectionList
+        sections={secciones}
+        keyExtractor={(s) => s.id}
+        stickySectionHeadersEnabled={false}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + Spacing['2xl'] }]}
+        renderSectionHeader={({ section }) => (
+          <Text accessibilityRole="header" style={[styles.secT, { color: theme.textMuted }]}>{section.titulo}</Text>
+        )}
         ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
-        renderItem={({ item }) => <ServicioItem item={item} />}
+        renderItem={({ item }) => <ServicioCard item={item} ms={item.ms} />}
         ListEmptyComponent={
-          <View style={styles.vacio}>
-            <Ionicons name="calendar-outline" size={48} color={Colors.textDisabled} />
-            <Text style={styles.vacioText}>Sin servicios programados</Text>
+          <View style={styles.empty}>
+            <Text style={[Type.heading, { color: theme.text }]}>No tienes servicios programados</Text>
+            <Text style={[Type.detail, { color: theme.textMuted }]}>
+              Cuando un pasajero reserve un viaje contigo, aparecerá aquí con su fecha y hora.
+            </Text>
+            <AppButton label="Volver" variant="ghost" size="md" onPress={() => navigation.goBack()} />
           </View>
         }
       />
@@ -103,79 +98,12 @@ export function ServiciosProgramadosScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.backgroundLight },
-  lista: { padding: Spacing.lg },
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    ...Shadow.sm,
-  },
-  ruta: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  rutaLeft: {
-    alignItems: 'center',
-    paddingTop: 3,
-  },
-  dotOrigen: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.success,
-  },
-  rutaLinea: {
-    width: 2,
-    flex: 1,
-    backgroundColor: '#C1C0C8',
-    marginVertical: 3,
-    minHeight: 20,
-  },
-  dotDestino: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-    backgroundColor: Colors.error,
-  },
-  rutaTextos: { flex: 1, justifyContent: 'space-between' },
-  rutaDireccion: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.divider,
-    paddingTop: Spacing.sm,
-  },
-  fechaText: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-  estadoChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  estadoText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-  },
-  vacio: {
-    alignItems: 'center',
-    marginTop: Spacing['4xl'],
-    gap: Spacing.md,
-  },
-  vacioText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
-  },
+  flex: { flex: 1 },
+  list: { paddingHorizontal: 18 },
+  secT: { ...Type.section, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
+  card: { borderRadius: BorderRadius.lg, borderWidth: 1, padding: 14, gap: Spacing.sm + 2 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  precio: { ...Type.heading, fontFamily: FontFamily.bold },
+  empty: { gap: Spacing.sm, paddingTop: Spacing.xl },
 });

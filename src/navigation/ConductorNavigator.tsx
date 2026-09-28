@@ -15,6 +15,7 @@ import { ConfiguracionScreen } from '@features/conductor/configuracion/Configura
 import { BilleteraScreen } from '@features/conductor/billetera/BilleteraScreen';
 import { ServiciosProgramadosScreen } from '@features/conductor/servicios-programados/ServiciosProgramadosScreen';
 import { SeleccionarVehiculoScreen } from '@features/conductor/vehiculo/SeleccionarVehiculoScreen';
+import { CatalogoScreen } from '@features/dev/CatalogoScreen';
 
 const Stack = createNativeStackNavigator<ConductorStackParamList>();
 
@@ -35,6 +36,7 @@ export function ConductorNavigator() {
       <Stack.Screen name="Billetera"            component={BilleteraScreen} />
       <Stack.Screen name="ServiciosProgramados" component={ServiciosProgramadosScreen} />
       <Stack.Screen name="SeleccionarVehiculo"  component={SeleccionarVehiculoScreen} />
+      {__DEV__ && <Stack.Screen name="Catalogo" component={CatalogoScreen} />}
     </Stack.Navigator>
   );
 }

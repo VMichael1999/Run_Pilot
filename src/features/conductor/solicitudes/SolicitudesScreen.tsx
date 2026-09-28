@@ -1,251 +1,128 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { ConductorStackParamList } from '@navigation/types';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import type { Solicitud } from '../types';
-import { useConductorStore } from '@store/useConductorStore';
-import { AppScreen } from '@shared/components/ui/AppScreen';
-import { AppHeader } from '@shared/components/ui/AppHeader';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppButton, AppHeader, RouteStops, Tag } from '@shared/components/ui';
+import { esEfectivo } from '@shared/utils/cobro';
+import { formatSoles } from '@shared/utils/format';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Spacing } from '@theme/spacing';
 
 type Nav = NativeStackNavigationProp<ConductorStackParamList>;
 
-function SolicitudItem({ item }: { item: Solicitud }) {
-  const navigation = useNavigation<Nav>();
-  const setSolicitudActual = useConductorStore((s) => s.setSolicitudActual);
-  const origen  = item.paradas.find((p) => p.esOrigen);
+/** Tarjeta resumida: precio y recojo se leen primero; aceptar se hace en el detalle. */
+function SolicitudCard({ item, onAbrir }: { item: Solicitud; onAbrir: () => void }) {
+  const theme = useAppTheme();
+  const origen = item.paradas.find((p) => p.esOrigen);
   const destino = item.paradas.find((p) => !p.esOrigen);
-
-  const handleAceptar = () => {
-    setSolicitudActual(item);
-    navigation.navigate('Viaje', { solicitudId: item.id });
-  };
+  const recojo = [
+    origen?.duracionMin ? `Recojo a ${origen.duracionMin} min` : undefined,
+    origen?.distanciaKm ? `${origen.distanciaKm} km` : undefined,
+  ].filter(Boolean).join(' · ');
+  const { pasajero } = item;
 
   return (
-    <View style={styles.card}>
-      {/* Cabecera: pasajero + precio */}
-      <View style={styles.cardHeader}>
-        <View style={styles.pasajeroInfo}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={18} color={Colors.textSecondary} />
-          </View>
-          <View>
-            <Text style={styles.pasajeroNombre}>
-              {item.pasajero.nombre} {item.pasajero.apellido}
-            </Text>
-            <View style={styles.ratingRow}>
-              <Ionicons name="star" size={12} color={Colors.warning} />
-              <Text style={styles.ratingText}>
-                {item.pasajero.calificacion.toFixed(1)} · {item.pasajero.totalViajes} viajes
-              </Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.precioBlock}>
-          <Text style={styles.precio}>{item.simboloMoneda} {item.precio.toFixed(2)}</Text>
-          <Text style={styles.metodoPago}>{item.metodoPago}</Text>
-        </View>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${formatSoles(item.precio)}, ${item.metodoPago}. ${recojo}. Desde ${origen?.direccion} hasta ${destino?.direccion}. ${pasajero.nombre}. Ver solicitud`}
+      onPress={onAbrir}
+      style={({ pressed }) => [
+        styles.card,
+        { backgroundColor: theme.surface, borderColor: theme.divider },
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={styles.top}>
+        <Text style={[styles.precio, { color: theme.text }]}>{formatSoles(item.precio)}</Text>
+        <Tag label={item.metodoPago} tone={esEfectivo(item.metodoPago) ? 'cash' : 'digital'} />
       </View>
-
-      <View style={styles.divider} />
-
-      {/* Ruta */}
-      <View style={styles.rutaBlock}>
-        <View style={styles.rutaRow}>
-          <View style={styles.dotOrigen} />
-          <Text style={styles.rutaDireccion} numberOfLines={1}>{origen?.direccion}</Text>
-          {origen?.distanciaKm != null && (
-            <Text style={styles.distancia}>{origen.distanciaKm} km</Text>
-          )}
+      {recojo ? <Text style={[styles.eta, { color: theme.text }]}>{recojo}</Text> : null}
+      {origen && destino && (
+        <RouteStops origen={{ direccion: origen.direccion }} destino={{ direccion: destino.direccion }} />
+      )}
+      <View style={styles.bottom}>
+        <View style={styles.pax}>
+          <Ionicons name="star" size={12} color={theme.textMuted} />
+          <Text style={[Type.detail, { color: theme.textMuted }]}>
+            {pasajero.nombre} {pasajero.apellido.charAt(0)}. · {pasajero.calificacion.toFixed(1)}
+          </Text>
         </View>
-        <View style={styles.rutaLine} />
-        <View style={styles.rutaRow}>
-          <View style={styles.dotDestino} />
-          <Text style={styles.rutaDireccion} numberOfLines={1}>{destino?.direccion}</Text>
-          {origen?.duracionMin != null && (
-            <Text style={styles.distancia}>{origen.duracionMin} min</Text>
-          )}
-        </View>
+        <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
       </View>
-
       {item.comentario ? (
-        <View style={styles.comentarioRow}>
-          <Ionicons name="chatbubble-outline" size={13} color={Colors.textSecondary} />
-          <Text style={styles.comentario} numberOfLines={1}>{item.comentario}</Text>
+        <View style={[styles.nota, { backgroundColor: theme.background }]}>
+          <Ionicons name="chatbox-outline" size={14} color={theme.textMuted} />
+          <Text style={[Type.detail, styles.flex, { color: theme.text }]}>{item.comentario}</Text>
         </View>
       ) : null}
-
-      {/* Boton aceptar */}
-      <TouchableOpacity style={styles.aceptarBtn} onPress={handleAceptar} activeOpacity={0.88}>
-        <Text style={styles.aceptarText}>ACEPTAR VIAJE</Text>
-        <Ionicons name="arrow-forward" size={16} color={Colors.white} />
-      </TouchableOpacity>
-    </View>
+    </Pressable>
   );
 }
 
 export function SolicitudesScreen() {
+  const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+  const solicitudes = mockSolicitudes;
+
   return (
-    <AppScreen>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <AppHeader title="Tablero de solicitudes" />
       <FlatList
-        data={mockSolicitudes}
+        data={solicitudes}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + Spacing['2xl'] }]}
         ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
         ListHeaderComponent={
-          <Text style={styles.subtitulo}>{mockSolicitudes.length} solicitudes disponibles</Text>
+          solicitudes.length > 0 ? (
+            <Text style={[styles.sub, { color: theme.textMuted }]}>
+              {solicitudes.length === 1 ? '1 solicitud cerca de ti' : `${solicitudes.length} solicitudes cerca de ti`}
+            </Text>
+          ) : null
         }
-        renderItem={({ item }) => <SolicitudItem item={item} />}
+        renderItem={({ item }) => (
+          <SolicitudCard
+            item={item}
+            onAbrir={() => navigation.navigate('SolicitudDetalle', { solicitudId: item.id })}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={[Type.heading, { color: theme.text }]}>No hay solicitudes cerca por ahora</Text>
+            <Text style={[Type.detail, { color: theme.textMuted }]}>
+              Conéctate desde el inicio y te avisaremos cuando llegue una.
+            </Text>
+            <AppButton label="Ir al inicio" variant="ghost" size="md" onPress={() => navigation.goBack()} />
+          </View>
+        }
       />
-    </AppScreen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-  },
-  subtitulo: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-    marginTop: Spacing.xs,
-  },
-
-  /* Card */
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    ...Shadow.sm,
-  },
-  cardHeader: {
+  flex: { flex: 1 },
+  list: { paddingHorizontal: 18 },
+  sub: { ...Type.section, marginBottom: Spacing.md, marginTop: Spacing.xs },
+  card: { borderRadius: BorderRadius.lg, borderWidth: 1, padding: 14, gap: Spacing.sm + 2 },
+  pressed: { opacity: 0.7 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  precio: { ...Type.priceCard },
+  eta: { ...Type.label },
+  bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pax: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  nota: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.md,
-  },
-  pasajeroInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.sm,
-    flex: 1,
+    padding: Spacing.sm + 2,
+    borderRadius: BorderRadius.md,
   },
-  avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#eef2f7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pasajeroNombre: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginTop: 2,
-  },
-  ratingText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-  },
-  precioBlock: { alignItems: 'flex-end' },
-  precio: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xl,
-    color: Colors.success,
-  },
-  metodoPago: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginBottom: Spacing.md,
-  },
-
-  /* Ruta */
-  rutaBlock: { marginBottom: Spacing.md },
-  rutaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  rutaLine: {
-    width: 2,
-    height: 12,
-    backgroundColor: Colors.divider,
-    marginLeft: 4,
-    marginVertical: 2,
-  },
-  dotOrigen: {
-    width: 10, height: 10, borderRadius: 5,
-    backgroundColor: Colors.success,
-  },
-  dotDestino: {
-    width: 10, height: 10, borderRadius: 5,
-    backgroundColor: Colors.error,
-  },
-  rutaDireccion: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-  },
-  distancia: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-  },
-
-  /* Comentario */
-  comentarioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    marginBottom: Spacing.md,
-  },
-  comentario: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    fontStyle: 'italic',
-  },
-
-  /* Boton */
-  aceptarBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    ...Shadow.sm,
-  },
-  aceptarText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    color: Colors.white,
-    letterSpacing: 0.8,
-  },
+  empty: { gap: Spacing.sm, paddingTop: Spacing.xl },
 });

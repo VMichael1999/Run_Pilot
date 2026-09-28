@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, FontSize } from '@theme/fonts';
+import { FontFamily, Type } from '@theme/fonts';
 import { Spacing } from '@theme/spacing';
 
 interface AppSectionTitleProps {
@@ -10,11 +10,15 @@ interface AppSectionTitleProps {
   style?: StyleProp<TextStyle>;
 }
 
-export function AppSectionTitle({ children, muted = false, style }: AppSectionTitleProps) {
+/** Encabezado de seccion en oracion normal (nunca en mayusculas). */
+export function AppSectionTitle({ children, muted = true, style }: AppSectionTitleProps) {
   const theme = useAppTheme();
 
   return (
-    <Text style={[styles.title, { color: muted ? theme.textMuted : theme.text }, style]}>
+    <Text
+      accessibilityRole="header"
+      style={[styles.title, { color: muted ? theme.textMuted : theme.text }, style]}
+    >
       {children}
     </Text>
   );
@@ -22,8 +26,8 @@ export function AppSectionTitle({ children, muted = false, style }: AppSectionTi
 
 const styles = StyleSheet.create({
   title: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
+    ...Type.section,
+    paddingTop: Spacing.xs,
     marginBottom: Spacing.sm,
   },
 });

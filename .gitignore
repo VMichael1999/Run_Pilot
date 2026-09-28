@@ -30,7 +30,8 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (la key de Google Maps vive en .env; solo .env.example se sube)
+.env
 .env*.local
 
 # typescript

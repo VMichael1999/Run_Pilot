@@ -1,45 +1,63 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Marker, Polyline } from 'react-native-maps';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
-import type { Parada } from '../types';
+import type { EstadoViaje } from '../types';
 import { useConductorStore } from '@store/useConductorStore';
 import { mockSolicitudes } from '../data/mockSolicitudes';
-import { PanelCliente } from './components/PanelCliente';
-import { BotonAccion } from './components/BotonAccion';
 import { PanelPago } from './components/PanelPago';
 import { fetchRoute, type LatLng } from './services/directionsService';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppButton, AvatarPasajero, MapButton, SlideToConfirm, SosButton } from '@shared/components/ui';
+import { DestinationMarker, DriverMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
+import { distanciaRutaKm, formatDistancia, restanteEnRutaKm } from '@shared/utils/geo';
+import { useAppTheme, useIsDark } from '@theme/useAppTheme';
+import { MapStyle } from '@theme/mapStyle';
+import { FontFamily, Type } from '@theme/fonts';
+import { Spacing, BorderRadius, Hit, HitSlop, Shadow } from '@theme/spacing';
+import { Duration, Timing } from '@theme/motion';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Viaje'>;
 
-/** Genera un numero de referencia de 5 digitos determinista a partir del id de solicitud. */
-function paradaRef(solicitudId: string, esOrigen: boolean): string {
-  const base =
-    (solicitudId.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 90_000) + 10_000;
-  const num   = esOrigen ? base : base + 1;
-  const escala = esOrigen ? 1 : 2;
-  return `#${num} - E:${escala}`;
+/** Lo que ve el conductor. Agrupa los estados del store sin cambiar el flujo. */
+type Fase = 'recojo' | 'esperando' | 'viaje';
+
+function faseDe(estado: EstadoViaje): Fase | null {
+  if (estado === 'aceptado' || estado === 'en_camino') return 'recojo';
+  if (estado === 'esperando') return 'esperando';
+  if (estado === 'iniciado') return 'viaje';
+  return null;
 }
 
-// En aceptado/en_camino solo muestra la ubicacion del conductor (zoom cerrado)
-const GOING_TO_PASSENGER = new Set(['aceptado', 'en_camino']);
+/** La siguiente accion concreta en cada estado (se avanza con un toque). */
+const ACCION: Partial<Record<EstadoViaje, string>> = {
+  aceptado:  'Ir al punto de recojo',
+  en_camino: 'Llegué al punto de recojo',
+  esperando: 'Iniciar viaje',
+};
 
 const LIMA_REGION = {
   latitude: -12.0464, longitude: -77.0428,
   latitudeDelta: 0.05, longitudeDelta: 0.05,
 };
 
+const hora = (ms: number) => {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+const cronometro = (seg: number) => `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+
 export function ViajeScreen({ route, navigation }: Props) {
   const { solicitudId } = route.params;
-  const insets          = useSafeAreaInsets();
-  const mapRef          = useRef<MapView>(null);
+  const insets = useSafeAreaInsets();
+  const theme  = useAppTheme();
+  const isDark = useIsDark();
+  const mapRef = useRef<MapView>(null);
 
   const solicitudActual = useConductorStore((s) => s.solicitudActual);
   const estadoViaje     = useConductorStore((s) => s.estadoViaje);
@@ -49,455 +67,336 @@ export function ViajeScreen({ route, navigation }: Props) {
   const solicitud = solicitudActual ?? mockSolicitudes.find((s) => s.id === solicitudId);
   const origen    = solicitud?.paradas.find((p) => p.esOrigen);
   const destino   = solicitud?.paradas.find((p) => !p.esOrigen);
+  const fase      = estadoViaje ? faseDe(estadoViaje) : null;
 
-  const [driverCoord,    setDriverCoord]    = useState<LatLng | null>(null);
-  const [routeCoords,    setRouteCoords]    = useState<LatLng[]>([]);
-  const [detalleParada,  setDetalleParada]  = useState<Parada | null>(null);
+  const [driverCoord, setDriverCoord] = useState<LatLng | null>(null);
+  const [heading,     setHeading]     = useState<number | null>(null);
+  const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
+  const [topH,        setTopH]        = useState(0);
+  const [panelH,      setPanelH]      = useState(0);
+  const driverRef = useRef<LatLng | null>(null);
+  driverRef.current = driverCoord;
 
-  // Obtener y rastrear ubicacion del conductor
+  // Ubicacion del conductor. Si la pantalla se cierra antes de que el watcher
+  // exista, se elimina apenas se crea (antes quedaba activo para siempre).
   useEffect(() => {
+    let cancelado = false;
     let sub: Location.LocationSubscription | null = null;
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      if (cancelado || status !== 'granted') return;
       const pos = await Location.getCurrentPositionAsync({});
-      const coord: LatLng = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      setDriverCoord(coord);
-      sub = await Location.watchPositionAsync(
+      if (cancelado) return;
+      setDriverCoord({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      const s = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.High, distanceInterval: 8 },
-        (loc) => setDriverCoord({ latitude: loc.coords.latitude, longitude: loc.coords.longitude }),
+        (loc) => {
+          setDriverCoord({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+          setHeading(loc.coords.heading);
+        },
       );
+      if (cancelado) s.remove();
+      else sub = s;
     })();
-    return () => { sub?.remove(); };
+    return () => {
+      cancelado = true;
+      sub?.remove();
+    };
   }, []);
 
-  // Zoom al conductor cuando esta yendo al pasajero
+  // Ruta de la fase: conductor -> recojo, o recojo -> destino. Se pide una vez por
+  // fase, en cuanto hay ubicacion (antes no se pedia si el GPS llegaba tarde).
+  const tieneUbicacion = driverCoord !== null;
   useEffect(() => {
-    if (!driverCoord) return;
-    if (estadoViaje && GOING_TO_PASSENGER.has(estadoViaje)) {
-      mapRef.current?.animateToRegion(
-        { ...driverCoord, latitudeDelta: 0.008, longitudeDelta: 0.008 },
-        600,
-      );
+    if (!fase || !origen || !destino) return;
+    let cancelado = false;
+    setRouteCoords([]);
+    if (fase === 'recojo') {
+      if (!driverRef.current) return;
+      fetchRoute(driverRef.current, origen.coordenadas).then((c) => { if (!cancelado) setRouteCoords(c); });
+    } else if (fase === 'viaje') {
+      fetchRoute(origen.coordenadas, destino.coordenadas).then((c) => { if (!cancelado) setRouteCoords(c); });
     }
-  }, [driverCoord, estadoViaje]);
+    return () => { cancelado = true; };
+  }, [fase, fase === 'recojo' && tieneUbicacion]);
 
-  // Cargar polyline segun estado
+  // Camara: el conductor y su objetivo siempre a la vista, entre la tarjeta y el panel
+  const objetivo = fase === 'viaje' ? destino?.coordenadas : origen?.coordenadas;
   useEffect(() => {
-    if (!estadoViaje || !origen || !destino) return;
-    if (GOING_TO_PASSENGER.has(estadoViaje)) {
-      // conductor → origen: solo si hay ubicacion real
-      if (driverCoord) {
-        fetchRoute(driverCoord, origen.coordenadas).then(setRouteCoords);
-      }
-    } else {
-      // origen → destino
-      fetchRoute(origen.coordenadas, destino.coordenadas).then((coords) => {
-        setRouteCoords(coords);
-        if (coords.length > 1 && origen && destino) {
-          const lats = coords.map((c) => c.latitude);
-          const lngs = coords.map((c) => c.longitude);
-          mapRef.current?.animateToRegion({
-            latitude:      (Math.max(...lats) + Math.min(...lats)) / 2,
-            longitude:     (Math.max(...lngs) + Math.min(...lngs)) / 2,
-            latitudeDelta:  Math.max(...lats) - Math.min(...lats) + 0.02,
-            longitudeDelta: Math.max(...lngs) - Math.min(...lngs) + 0.02,
-          }, 700);
-        }
-      });
+    if (!objetivo || panelH === 0) return;
+    const puntos = [driverCoord, objetivo].filter((p): p is LatLng => !!p);
+    if (puntos.length === 1) {
+      mapRef.current?.animateToRegion({ ...puntos[0], latitudeDelta: 0.01, longitudeDelta: 0.01 }, Duration.slow);
+      return;
     }
-  }, [estadoViaje]);
+    mapRef.current?.fitToCoordinates(puntos, {
+      edgePadding: { top: topH + 40, right: 60, bottom: panelH + 40, left: 60 },
+      animated: true,
+    });
+  }, [driverCoord, objetivo?.latitude, objetivo?.longitude, panelH, topH]);
+
+  // Tiempo esperando al pasajero
+  const [esperandoSeg, setEsperandoSeg] = useState(0);
+  useEffect(() => {
+    if (fase !== 'esperando') return;
+    setEsperandoSeg(0);
+    const iv = setInterval(() => setEsperandoSeg((s) => s + 1), 1000);
+    return () => clearInterval(iv);
+  }, [fase]);
+
+  // Progreso del viaje sobre la ruta
+  const totalKm = useMemo(() => distanciaRutaKm(routeCoords), [routeCoords]);
+  const restanteKm = fase === 'viaje' && driverCoord && routeCoords.length > 1
+    ? restanteEnRutaKm(routeCoords, driverCoord)
+    : totalKm;
+  const progreso = totalKm > 0 ? Math.min(1, Math.max(0, 1 - restanteKm / totalKm)) : 0;
+  // Lo unico que se mueve durante el viaje
+  const progresoSV = useSharedValue(0);
+  useEffect(() => {
+    progresoSV.value = withTiming(progreso, Timing.slow);
+  }, [progreso, progresoSV]);
+  const progresoStyle = useAnimatedStyle(() => ({ width: `${progresoSV.value * 100}%` }));
 
   if (!solicitud || !estadoViaje) return null;
 
-  const mostrarPanelPago = estadoViaje === 'llegado';
-  const yendoAlPasajero  = GOING_TO_PASSENGER.has(estadoViaje);
-  const polylineCoords   = routeCoords.length > 1 ? routeCoords : [];
+  const pasajero = solicitud.pasajero;
+  const nombreCorto = `${pasajero.nombre} ${pasajero.apellido.charAt(0)}.`;
 
-  // BotonAccion total height: paddingTop(8) + track(68) + paddingBottom(12) = 88
-  const BOTON_INNER_H  = 88;
-  const botonPadBottom = insets.bottom > 0 ? insets.bottom : Spacing.sm;
-  const botonTotalH    = BOTON_INNER_H + botonPadBottom;
-
-  const handleAvanzar  = () => avanzarEstado();
+  const handleAvanzar = () => avanzarEstado();
   const handleFinalizar = () => {
     finalizarViaje();
     navigation.replace('Calificar', { solicitudId: solicitud.id });
   };
 
-  return (
-    <View style={styles.container}>
+  if (estadoViaje === 'llegado') {
+    return (
+      <PanelPago
+        solicitud={solicitud}
+        distanciaKm={totalKm > 0 ? totalKm : undefined}
+        onFinalizar={handleFinalizar}
+      />
+    );
+  }
+  if (!fase) return null;
 
-      {/* Mapa */}
+  // Tarjeta superior: a quien o a donde, y cuanto falta
+  const recojoKm = fase === 'recojo' && routeCoords.length > 1 ? totalKm : origen?.distanciaKm;
+  const minViaje = destino?.duracionMin
+    ? Math.max(1, Math.round(destino.duracionMin * (totalKm > 0 ? restanteKm / totalKm : 1)))
+    : undefined;
+
+  const tarjeta =
+    fase === 'recojo' ? {
+      k: `Recoge a ${pasajero.nombre}`,
+      direccion: origen?.direccion,
+      cifra: origen?.duracionMin ? `${origen.duracionMin} min` : recojoKm ? formatDistancia(recojoKm) : undefined,
+      sub: origen?.duracionMin && recojoKm ? formatDistancia(recojoKm) : undefined,
+    } : fase === 'esperando' ? {
+      k: `Esperando a ${pasajero.nombre}`,
+      direccion: origen?.direccion,
+      cifra: cronometro(esperandoSeg),
+      sub: 'esperando',
+    } : {
+      k: 'Destino',
+      direccion: destino?.direccion,
+      cifra: minViaje ? `${minViaje} min` : totalKm > 0 ? formatDistancia(restanteKm) : undefined,
+      sub: minViaje ? `llegas ${hora(Date.now() + minViaje * 60_000)}` : undefined,
+    };
+
+  const contacto = (esquema: 'tel' | 'sms') => {
+    if (pasajero.telefono) void Linking.openURL(`${esquema}:${pasajero.telefono}`);
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
+        customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
         initialRegion={
-          driverCoord
-            ? { ...driverCoord, latitudeDelta: 0.008, longitudeDelta: 0.008 }
-            : LIMA_REGION
+          origen ? { ...origen.coordenadas, latitudeDelta: 0.02, longitudeDelta: 0.02 } : LIMA_REGION
         }
         showsUserLocation={false}
+        toolbarEnabled={false}
       >
-        {/* Marker del conductor */}
-        {driverCoord && (
-          <Marker coordinate={driverCoord} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={styles.markerDriver}>
-              <View style={styles.markerDriverDot} />
-            </View>
-          </Marker>
+        {routeCoords.length > 1 && (
+          <>
+            {/* Borde para que la ruta se lea sobre cualquier calle */}
+            <Polyline coordinates={routeCoords} strokeColor={theme.routeCase} strokeWidth={10} lineJoin="round" />
+            <Polyline coordinates={routeCoords} strokeColor={theme.route} strokeWidth={5} lineJoin="round" />
+          </>
         )}
-
-        {/* Markers origen/destino cuando ya va en viaje */}
-        {!yendoAlPasajero && origen && (
-          <Marker coordinate={origen.coordenadas} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={styles.marker}><View style={styles.markerDot} /></View>
-          </Marker>
-        )}
-        {!yendoAlPasajero && destino && (
-          <Marker coordinate={destino.coordenadas} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={styles.marker}><View style={styles.markerDot} /></View>
-          </Marker>
-        )}
-
-        {polylineCoords.length > 1 && (
-          <Polyline
-            coordinates={polylineCoords}
-            strokeColor={Colors.primary}
-            strokeWidth={4}
-          />
-        )}
+        {fase !== 'viaje' && origen && <PickupMarker coordinate={origen.coordenadas} active />}
+        {fase === 'viaje' && destino && <DestinationMarker coordinate={destino.coordenadas} />}
+        {driverCoord && <DriverMarker coordinate={driverCoord} heading={heading} />}
       </MapView>
 
-      {/* Barra de ruta flotante (top) */}
-      {!mostrarPanelPago && (
-        <View style={[styles.topBar, { paddingTop: insets.top + Spacing.xs }]}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
-          </TouchableOpacity>
-
-          <View style={styles.rutaCard}>
-            <TouchableOpacity
-              style={styles.rutaRow}
-              activeOpacity={0.7}
-              onPress={() => origen && setDetalleParada(origen)}
-            >
-              <View style={styles.dotOrigen} />
-              <Text style={styles.rutaText} numberOfLines={1}>{origen?.direccion}</Text>
-              <Ionicons name="chevron-forward" size={12} color={Colors.textSecondary} />
-            </TouchableOpacity>
-            <View style={styles.rutaSep} />
-            <TouchableOpacity
-              style={styles.rutaRow}
-              activeOpacity={0.7}
-              onPress={() => destino && setDetalleParada(destino)}
-            >
-              <View style={styles.dotDestino} />
-              <Text style={styles.rutaText} numberOfLines={1}>{destino?.direccion}</Text>
-              <Ionicons name="chevron-forward" size={12} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => driverCoord && mapRef.current?.animateToRegion(
-              { ...driverCoord, latitudeDelta: 0.008, longitudeDelta: 0.008 }, 600
-            )}
-          >
-            <Ionicons name="locate" size={22} color={Colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Boton SOS */}
-      {!mostrarPanelPago && (
-        <TouchableOpacity style={[styles.sosBtn, { bottom: botonTotalH + 106 }]}>
-          <Text style={styles.sosText}>SOS</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* PanelCliente - bottom sheet above BotonAccion */}
-      {!mostrarPanelPago && (
-        <PanelCliente
-          solicitud={solicitud}
-          estadoViaje={estadoViaje}
-          bottomOffset={botonTotalH}
-        />
-      )}
-
-      {/* BotonAccion - fixed at the very bottom */}
-      {!mostrarPanelPago && (
-        <View style={[styles.botonWrapper, { paddingBottom: botonPadBottom }]}>
-          <BotonAccion key={estadoViaje} estado={estadoViaje} onPress={handleAvanzar} />
-        </View>
-      )}
-
-      {mostrarPanelPago && (
-        <PanelPago solicitud={solicitud} onFinalizar={handleFinalizar} />
-      )}
-
-      {/* ── Detalle de parada ── */}
-      <Modal
-        visible={detalleParada !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDetalleParada(null)}
+      {/* Arriba: volver y SOS; debajo, a quien o a donde */}
+      <View
+        style={[styles.top, { paddingTop: insets.top + Spacing.sm }]}
+        onLayout={(e) => setTopH(e.nativeEvent.layout.height)}
+        pointerEvents="box-none"
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setDetalleParada(null)}>
-          <Pressable
-            style={[styles.detalleCard, { top: insets.top + 76 }]}
-            onPress={() => { /* consume el tap para no cerrar */ }}
-          >
-            {/* Cabecera: icono de tipo + etiqueta + referencia */}
-            <View style={styles.detalleHeader}>
-              <View style={[
-                styles.detalleDot,
-                detalleParada?.esOrigen ? styles.detalleDotOrigen : styles.detalleDotDestino,
-              ]} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.detalleTipo}>
-                  {detalleParada?.esOrigen ? 'Punto de recogida' : 'Destino'}
-                </Text>
-                <Text style={styles.detalleRef}>
-                  {detalleParada ? paradaRef(solicitud.id, detalleParada.esOrigen) : ''}
-                </Text>
-              </View>
+        <View style={styles.topBar} pointerEvents="box-none">
+          <MapButton icon="arrow-back" accessibilityLabel="Volver al inicio" onPress={() => navigation.goBack()} />
+          <SosButton />
+        </View>
+
+        <Animated.View
+          key={`card-${fase}`}
+          entering={FadeInDown.duration(Duration.base)}
+          style={[styles.dest, { backgroundColor: theme.surface }]}
+          accessible
+          accessibilityLabel={[tarjeta.k, tarjeta.direccion, tarjeta.cifra, tarjeta.sub].filter(Boolean).join(', ')}
+        >
+          <View style={styles.flex}>
+            <Text style={[styles.destK, { color: theme.textMuted }]}>{tarjeta.k}</Text>
+            <Text style={[Type.heading, { color: theme.text }]} numberOfLines={2}>{tarjeta.direccion}</Text>
+          </View>
+          {tarjeta.cifra ? (
+            <View style={styles.destT}>
+              {/* Ancho minimo: las cifras de General Sans no son tabulares */}
+              <Text style={[Type.figure, styles.destFig, { color: theme.text }]}>{tarjeta.cifra}</Text>
+              {tarjeta.sub ? <Text style={[Type.caption, { color: theme.textMuted }]}>{tarjeta.sub}</Text> : null}
             </View>
+          ) : null}
+        </Animated.View>
+      </View>
 
-            <View style={styles.detalleSep} />
-
-            {/* Direccion */}
-            <Text style={styles.detalleDireccion}>{detalleParada?.direccion}</Text>
-
-            {/* Notas */}
-            {detalleParada?.notas ? (
-              <View style={styles.detalleNotasWrap}>
-                <Ionicons name="information-circle-outline" size={14} color={Colors.textSecondary} />
-                <Text style={styles.detalleNotas}>{detalleParada.notas}</Text>
+      {/* Panel inferior: un estado, una accion */}
+      <View
+        style={[styles.panel, { backgroundColor: theme.surface, paddingBottom: insets.bottom + Spacing.xl + 2 }]}
+        onLayout={(e) => setPanelH(e.nativeEvent.layout.height)}
+      >
+        <Animated.View key={`panel-${fase}`} entering={FadeInDown.duration(Duration.base)} style={styles.panelBody}>
+          {fase === 'viaje' ? (
+            <>
+              <View style={styles.hRow}>
+                <Text style={[Type.bodyStrong, { color: theme.text }]}>{nombreCorto} a bordo</Text>
+                {totalKm > 0 && (
+                  <Text style={[Type.detail, { color: theme.textMuted }]}>
+                    {(totalKm - restanteKm).toFixed(1)} de {totalKm.toFixed(1)} km
+                  </Text>
+                )}
               </View>
-            ) : null}
-
-            {/* Distancia y duracion */}
-            {(detalleParada?.distanciaKm || detalleParada?.duracionMin) ? (
-              <View style={styles.detalleMetaRow}>
-                {detalleParada.distanciaKm ? (
-                  <View style={styles.detalleMeta}>
-                    <Ionicons name="navigate-outline" size={13} color={Colors.textSecondary} />
-                    <Text style={styles.detalleMetaText}>{detalleParada.distanciaKm} km</Text>
+              <View
+                style={[styles.prog, { backgroundColor: theme.divider }]}
+                accessible
+                accessibilityRole="progressbar"
+                accessibilityLabel="Progreso del viaje"
+                accessibilityValue={{ min: 0, max: 100, now: Math.round(progreso * 100) }}
+              >
+                <Animated.View style={[styles.progFill, { backgroundColor: theme.onTrip }, progresoStyle]} />
+              </View>
+              <SlideToConfirm
+                tone="primary"
+                label="Desliza para finalizar"
+                accessibilityLabel="Finalizar viaje y pasar al cobro"
+                onConfirm={handleAvanzar}
+              />
+            </>
+          ) : (
+            <>
+              <View style={styles.hRow}>
+                <View style={styles.pax}>
+                  <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={40} />
+                  <View style={styles.flex}>
+                    <Text style={[Type.label, { color: theme.text }]}>{nombreCorto}</Text>
+                    {origen?.notas ? (
+                      <Text style={[Type.detail, { color: theme.textMuted }]} numberOfLines={2}>{origen.notas}</Text>
+                    ) : null}
+                  </View>
+                </View>
+                {pasajero.telefono ? (
+                  <View style={styles.contact}>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel={`Llamar a ${pasajero.nombre}`}
+                      onPress={() => contacto('tel')}
+                      hitSlop={HitSlop}
+                      style={[styles.icb, { borderColor: theme.divider }]}
+                    >
+                      <Ionicons name="call-outline" size={20} color={theme.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel={`Escribir a ${pasajero.nombre}`}
+                      onPress={() => contacto('sms')}
+                      hitSlop={HitSlop}
+                      style={[styles.icb, { borderColor: theme.divider }]}
+                    >
+                      <Ionicons name="chatbox-outline" size={20} color={theme.text} />
+                    </TouchableOpacity>
                   </View>
                 ) : null}
-                {detalleParada.duracionMin ? (
-                  <View style={styles.detalleMeta}>
-                    <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
-                    <Text style={styles.detalleMetaText}>{detalleParada.duracionMin} min</Text>
-                  </View>
-                ) : null}
               </View>
-            ) : null}
-          </Pressable>
-        </Pressable>
-      </Modal>
+              <AppButton label={ACCION[estadoViaje] ?? ''} onPress={handleAvanzar} />
+            </>
+          )}
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  flex: { flex: 1 },
 
-  /* Top bar con barra de ruta */
-  topBar: {
+  top: {
     position: 'absolute',
-    top: 0, left: 0, right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-  },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.white,
-    alignItems: 'center', justifyContent: 'center',
-    ...Shadow.md,
-  },
-  rutaCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    ...Shadow.md,
-  },
-  rutaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  rutaSep: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginVertical: 5,
-    marginLeft: 22,
-  },
-  dotOrigen: {
-    width: 10, height: 10, borderRadius: 5,
-    borderWidth: 2, borderColor: Colors.textSecondary,
-    backgroundColor: Colors.white,
-  },
-  dotDestino: {
-    width: 10, height: 10, borderRadius: 2,
-    backgroundColor: Colors.textPrimary,
-  },
-  rutaText: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textPrimary,
-  },
-
-  /* SOS */
-  sosBtn: {
-    position: 'absolute',
-    right: Spacing.lg,
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: Colors.error,
-    alignItems: 'center', justifyContent: 'center',
-    ...Shadow.md,
-  },
-  sosText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.white,
-    letterSpacing: 0.5,
-  },
-
-  /* BotonAccion fixed wrapper */
-  botonWrapper: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.white,
-  },
-
-  /* Marker conductor: circulo negro con punto blanco */
-  markerDriver: {
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: Colors.textPrimary,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: Colors.white,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4, shadowRadius: 4,
-    elevation: 6,
-  },
-  markerDriverDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.white,
-  },
-
-  /* Modal detalle parada */
-  modalBackdrop: {
-    flex: 1,
-  },
-  detalleCard: {
-    position: 'absolute',
+    top: 0,
     left: Spacing.md,
     right: Spacing.md,
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    ...Shadow.lg,
+    gap: Spacing.sm,
   },
-  detalleHeader: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
+    justifyContent: 'space-between',
   },
-  detalleDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  dest: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm + 2,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: 14,
+    ...Shadow.raise,
+  },
+  destK: { ...Type.tag, marginBottom: Spacing.xxs },
+  destT: { alignItems: 'flex-end' },
+  destFig: { minWidth: 64, textAlign: 'right' },
+
+  panel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: BorderRadius.sheet,
+    borderTopRightRadius: BorderRadius.sheet,
+    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    ...Shadow.sheet,
+  },
+  panelBody: { gap: 14 },
+  hRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm + 2,
+  },
+  pax: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
+  contact: { flexDirection: 'row', gap: Spacing.sm },
+  icb: {
+    width: Hit.control,
+    height: Hit.control,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  detalleDotOrigen: {
-    backgroundColor: '#EEF2FF',
-    borderWidth: 2,
-    borderColor: '#818CF8',
-  },
-  detalleDotDestino: {
-    backgroundColor: '#FEF3C7',
-    borderWidth: 2,
-    borderColor: Colors.warning,
-  },
-  detalleTipo: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-  },
-  detalleRef: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  detalleSep: {
-    height: 1,
-    backgroundColor: Colors.divider,
-    marginBottom: Spacing.md,
-  },
-  detalleDireccion: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-    lineHeight: 20,
-    marginBottom: Spacing.sm,
-  },
-  detalleNotasWrap: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.xs,
-    marginBottom: Spacing.sm,
-  },
-  detalleNotas: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-  detalleMetaRow: {
-    flexDirection: 'row',
-    gap: Spacing.lg,
-    marginTop: Spacing.xs,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.divider,
-  },
-  detalleMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  detalleMetaText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-  },
-
-  /* Markers origen/destino */
-  marker: {
-    width: 22, height: 22, borderRadius: 4,
-    backgroundColor: Colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: Colors.white,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3, shadowRadius: 3,
-    elevation: 4,
-  },
-  markerDot: {
-    width: 7, height: 7, borderRadius: 3.5,
-    backgroundColor: Colors.white,
-  },
+  prog: { height: 6, borderRadius: 6, overflow: 'hidden' },
+  progFill: { height: '100%', borderRadius: 6 },
 });

@@ -1,370 +1,170 @@
 import React, { useMemo } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { Pressable, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import type { ViajeCompletado } from '@features/conductor/types';
 import { useConductorStore } from '@store/useConductorStore';
-import { AvatarPasajero } from '@shared/components/ui/AvatarPasajero';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppButton, AppHeader } from '@shared/components/ui';
+import { distritoDe, esEfectivo } from '@shared/utils/cobro';
+import { hora } from '@shared/utils/fecha';
+import { formatSoles, pluralViajes } from '@shared/utils/format';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Hit, Spacing } from '@theme/spacing';
+import { mockConductor } from '../data/mockConductor';
+import { agruparPorDia } from './agrupar';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'HistorialViaje'>;
 
-/* ── Helpers ── */
-function formatHora(ms: number): string {
-  return new Date(ms).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-}
-
-function seccionFecha(ms: number): string {
-  const hoy   = new Date();
-  const fecha = new Date(ms);
-  const diffDias = Math.floor(
-    (new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime() -
-     new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime()) /
-    86_400_000
-  );
-  if (diffDias === 0) return 'Hoy';
-  if (diffDias === 1) return 'Ayer';
-  return fecha.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long' });
-}
-
-interface Seccion {
-  titulo: string;
-  data: ViajeCompletado[];
-}
-
-function agruparPorFecha(historial: ViajeCompletado[]): Seccion[] {
-  const mapa: Record<string, ViajeCompletado[]> = {};
-  for (const v of historial) {
-    const key = seccionFecha(v.fechaMs);
-    if (!mapa[key]) mapa[key] = [];
-    mapa[key].push(v);
-  }
-  return Object.entries(mapa).map(([titulo, data]) => ({ titulo, data }));
-}
-
-/* ── Item de viaje ── */
-function ViajeCard({
+function ViajeFila({
   viaje,
-  onPress,
+  onAbrir,
+  onCalificar,
 }: {
   viaje: ViajeCompletado;
-  onPress: () => void;
+  onAbrir: () => void;
+  onCalificar: () => void;
 }) {
+  const theme = useAppTheme();
   const { solicitud, fechaMs, calificacion } = viaje;
-  const { pasajero, paradas, precio, simboloMoneda, metodoPago } = solicitud;
-  const origen  = paradas.find((p) => p.esOrigen);
-  const destino = paradas.find((p) => !p.esOrigen);
+  const { pasajero, paradas, precio, metodoPago } = solicitud;
+  const o = paradas.find((p) => p.esOrigen);
+  const d = paradas.find((p) => !p.esOrigen);
+  const ruta = o && d ? `${distritoDe(o.direccion)} → ${distritoDe(d.direccion)}` : 'Viaje';
+  const pago = esEfectivo(metodoPago) ? 'efectivo' : 'digital';
+  const pendiente = calificacion === 0;
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.75} onPress={onPress}>
-      {/* Avatar */}
-      <AvatarPasajero fotoUrl={pasajero.fotoUrl} size={50} />
-
-      {/* Info centro */}
-      <View style={styles.cardInfo}>
-        <View style={styles.cardTopRow}>
-          <Text style={styles.cardNombre} numberOfLines={1}>
-            {pasajero.nombre} {pasajero.apellido}
+    <View style={[styles.hv, { borderBottomColor: theme.divider }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${hora(fechaMs)}, ${ruta}, ${pasajero.nombre}, ${pago}, ${formatSoles(precio)}. ${
+          pendiente ? 'Sin calificar' : `Le diste ${calificacion}`
+        }. Ver detalle`}
+        onPress={onAbrir}
+        style={({ pressed }) => [styles.hvMain, pressed && { opacity: 0.6 }]}
+      >
+        <Text style={[styles.t, { color: theme.text }]}>{hora(fechaMs)}</Text>
+        <View style={styles.flex}>
+          <Text style={[styles.ruta, { color: theme.text }]}>{ruta}</Text>
+          <Text style={[Type.caption, { color: theme.textMuted }]}>
+            {pasajero.nombre} {pasajero.apellido.charAt(0)}. · {pago}
           </Text>
-          <Text style={styles.cardMonto}>{simboloMoneda} {precio.toFixed(2)}</Text>
         </View>
+        <Text style={[styles.m, { color: theme.text }]}>{formatSoles(precio)}</Text>
+      </Pressable>
 
-        <Text style={styles.cardRuta} numberOfLines={1}>
-          {origen?.direccion?.split(',')[0]} → {destino?.direccion?.split(',')[0]}
-        </Text>
-
-        <View style={styles.cardBottomRow}>
-          {/* Hora + metodo */}
-          <View style={styles.cardMeta}>
-            <Ionicons name="time-outline" size={11} color={Colors.textSecondary} />
-            <Text style={styles.cardMetaText}>{formatHora(fechaMs)}</Text>
-            <Text style={styles.cardMetaSep}>·</Text>
-            <Text style={styles.cardMetaText}>{metodoPago}</Text>
+      <View style={styles.row2}>
+        {pendiente ? (
+          <View style={[styles.mini, { backgroundColor: theme.signal }]}>
+            <Text style={[Type.tag, { color: theme.onSignal }]}>Sin calificar</Text>
           </View>
-          {/* Estrellas */}
-          <View style={styles.starsRow}>
-            {calificacion > 0
-              ? [1,2,3,4,5].map((i) => (
-                  <Ionicons
-                    key={i}
-                    name={i <= calificacion ? 'star' : 'star-outline'}
-                    size={11}
-                    color={Colors.warning}
-                  />
-                ))
-              : <Text style={styles.sinCalif}>Sin calificar</Text>
-            }
+        ) : (
+          <View style={[styles.mini, styles.miniRow, { backgroundColor: theme.background }]}>
+            <Ionicons name="star" size={11} color={theme.textMuted} />
+            <Text style={[Type.tag, { color: theme.textMuted }]}>Le diste {calificacion}</Text>
           </View>
-        </View>
-      </View>
-
-      <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} style={{ marginLeft: 2 }} />
-    </TouchableOpacity>
-  );
-}
-
-/* ── Pantalla principal ── */
-export function HistorialViajeScreen({ navigation }: Props) {
-  const insets   = useSafeAreaInsets();
-  const historial = useConductorStore((s) => s.historial);
-
-  const secciones = useMemo(() => agruparPorFecha(historial), [historial]);
-
-  const totalViajes   = historial.length;
-  const totalGanado   = historial.reduce((sum, v) => sum + v.solicitud.precio, 0);
-
-  /* FlatList data: mezcla de cabeceras de seccion e items */
-  type FlatItem =
-    | { type: 'header'; titulo: string }
-    | { type: 'item';   viaje: ViajeCompletado };
-
-  const flatData: FlatItem[] = useMemo(() => {
-    const items: FlatItem[] = [];
-    for (const sec of secciones) {
-      items.push({ type: 'header', titulo: sec.titulo });
-      for (const v of sec.data) items.push({ type: 'item', viaje: v });
-    }
-    return items;
-  }, [secciones]);
-
-  return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={22} color={Colors.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Historial de viajes</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNum}>{totalViajes}</Text>
-          <Text style={styles.statLbl}>Viajes</Text>
-        </View>
-        <View style={styles.statSep} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNum}>S/ {totalGanado.toFixed(2)}</Text>
-          <Text style={styles.statLbl}>Total ganado</Text>
-        </View>
-        <View style={styles.statSep} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNum}>
-            {totalViajes > 0
-              ? (historial.filter((v) => v.calificacion > 0).reduce((s, v) => s + v.calificacion, 0) /
-                 Math.max(1, historial.filter((v) => v.calificacion > 0).length)).toFixed(1)
-              : '--'}
-          </Text>
-          <Text style={styles.statLbl}>Calificacion</Text>
-        </View>
-      </View>
-
-      {/* ── Lista ── */}
-      <View style={styles.body}>
-        <FlatList
-          data={flatData}
-          keyExtractor={(item, i) =>
-            item.type === 'header' ? `hdr-${item.titulo}` : `viaje-${item.viaje.id}-${i}`
-          }
-          contentContainerStyle={styles.lista}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            if (item.type === 'header') {
-              return (
-                <View style={styles.seccionHeader}>
-                  <Text style={styles.seccionTitulo}>{item.titulo}</Text>
-                </View>
-              );
-            }
-            return (
-              <ViajeCard
-                viaje={item.viaje}
-                onPress={() => navigation.navigate('HistorialDetalle', { viajeId: item.viaje.id })}
-              />
-            );
-          }}
-          ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
-          ListEmptyComponent={
-            <View style={styles.vacio}>
-              <Ionicons name="car-outline" size={52} color={Colors.textDisabled} />
-              <Text style={styles.vacioTitulo}>Sin viajes aun</Text>
-              <Text style={styles.vacioSub}>Tus viajes completados apareceran aqui</Text>
-            </View>
-          }
-        />
+        )}
+        {pendiente && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Calificar a ${pasajero.nombre}`}
+            onPress={onCalificar}
+            style={styles.calificar}
+          >
+            <Text style={[styles.link, { color: theme.text }]}>Calificar</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 }
 
+export function HistorialViajeScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+  const historial = useConductorStore((s) => s.historial);
+  const setSolicitudActual = useConductorStore((s) => s.setSolicitudActual);
+  const estadoViaje = useConductorStore((s) => s.estadoViaje);
+
+  const secciones = useMemo(() => agruparPorDia(historial, mockConductor.comision), [historial]);
+
+  const calificar = (v: ViajeCompletado) => {
+    // Calificar lee el viaje del historial; no se toca un viaje en curso
+    if (!estadoViaje) setSolicitudActual(null);
+    navigation.navigate('Calificar', { solicitudId: v.id });
+  };
+
+  return (
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
+      <AppHeader title="Historial" />
+      <SectionList
+        sections={secciones}
+        keyExtractor={(v) => v.id}
+        stickySectionHeadersEnabled={false}
+        contentContainerStyle={[styles.pad, { paddingBottom: insets.bottom + Spacing['2xl'] }]}
+        renderSectionHeader={({ section }) => (
+          <View
+            style={styles.secH}
+            accessibilityRole="header"
+            accessible
+            accessibilityLabel={`${section.titulo}, ${pluralViajes(section.viajes)}, ${formatSoles(section.ganado)} ganados`}
+          >
+            <Text style={[styles.secT, { color: theme.textMuted }]}>
+              {section.titulo} · {pluralViajes(section.viajes)}
+            </Text>
+            <Text style={[styles.secT, { color: theme.textMuted }]}>{formatSoles(section.ganado)} ganados</Text>
+          </View>
+        )}
+        renderItem={({ item }) => (
+          <ViajeFila
+            viaje={item}
+            onAbrir={() => navigation.navigate('HistorialDetalle', { viajeId: item.id })}
+            onCalificar={() => calificar(item)}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={[Type.heading, { color: theme.text }]}>Todavía no tienes viajes</Text>
+            <Text style={[Type.detail, { color: theme.textMuted }]}>
+              Aquí verás cada viaje que termines, agrupado por día.
+            </Text>
+            <AppButton label="Ir al inicio" variant="ghost" size="md" onPress={() => navigation.goBack()} />
+          </View>
+        }
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.primary },
-
-  /* Header */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    color: Colors.white,
-    textAlign: 'center',
-  },
-
-  /* Stats */
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing['3xl'],
-  },
-  statItem: { alignItems: 'center', gap: 3 },
-  statNum: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize['2xl'],
-    color: Colors.white,
-    letterSpacing: -0.5,
-  },
-  statLbl: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: 'rgba(255,255,255,0.55)',
-  },
-  statSep: {
-    width: 1,
-    height: 36,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-
-  /* Body */
-  body: {
-    flex: 1,
-    backgroundColor: '#f4f6f9',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    marginTop: -20,
-    overflow: 'hidden',
-  },
-  lista: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing['4xl'],
-  },
-
-  /* Seccion */
-  seccionHeader: {
-    paddingVertical: Spacing.sm,
-    paddingTop: Spacing.md,
-  },
-  seccionTitulo: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-
-  /* Card */
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.md,
-    gap: Spacing.md,
-    ...Shadow.sm,
-  },
-  cardInfo: { flex: 1 },
-  cardTopRow: {
+  flex: { flex: 1 },
+  pad: { paddingHorizontal: 18 },
+  secH: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 3,
-  },
-  cardNombre: {
-    flex: 1,
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-    marginRight: Spacing.sm,
-  },
-  cardMonto: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    color: Colors.success,
-  },
-  cardRuta: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    marginBottom: 5,
-  },
-  cardBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  cardMetaText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-  },
-  cardMetaSep: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-  },
-  starsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 1,
-  },
-  sinCalif: {
-    fontFamily: FontFamily.regular,
-    fontSize: 10,
-    color: Colors.textDisabled,
-  },
-
-  /* Vacio */
-  vacio: {
-    alignItems: 'center',
-    marginTop: Spacing['5xl'],
+    alignItems: 'baseline',
     gap: Spacing.sm,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xs,
   },
-  vacioTitulo: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    color: Colors.textSecondary,
+  secT: { ...Type.section },
+  hv: { paddingVertical: Spacing.md, borderBottomWidth: 1, gap: Spacing.xs },
+  hvMain: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm + 2, minHeight: 40 },
+  t: { width: 44, ...Type.smallStrong },
+  ruta: { ...Type.label },
+  m: { ...Type.amount, textAlign: 'right' },
+  row2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginLeft: 44 + Spacing.sm + 2,
   },
-  vacioSub: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textDisabled,
-    textAlign: 'center',
-  },
+  mini: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: BorderRadius.full },
+  miniRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  calificar: { minHeight: Hit.min, minWidth: Hit.min, justifyContent: 'center', alignItems: 'flex-end' },
+  link: { ...Type.detail, fontFamily: FontFamily.semibold, textDecorationLine: 'underline' },
+  empty: { gap: Spacing.sm, paddingTop: Spacing.xl },
 });

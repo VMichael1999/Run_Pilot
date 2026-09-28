@@ -1,22 +1,32 @@
 import React, { useState } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@theme/colors';
+import { View, Image, Text, StyleSheet } from 'react-native';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily } from '@theme/fonts';
 
 interface Props {
   fotoUrl?: string;
+  nombre?: string;
+  apellido?: string;
   size?: number;
 }
 
-export function AvatarPasajero({ fotoUrl, size = 48 }: Props) {
+function iniciales(nombre?: string, apellido?: string): string {
+  return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();
+}
+
+/** Foto del pasajero con respaldo de iniciales si no hay foto o no carga. */
+export function AvatarPasajero({ fotoUrl, nombre, apellido, size = 40 }: Props) {
+  const theme = useAppTheme();
   const [error, setError] = useState(false);
-  const radius = size / 2;
+  const radius = Math.round(size * 0.3);
+  const label = [nombre, apellido].filter(Boolean).join(' ');
 
   if (fotoUrl && !error) {
     return (
       <Image
+        accessibilityLabel={label ? `Foto de ${label}` : 'Foto del pasajero'}
         source={{ uri: fotoUrl }}
-        style={[styles.img, { width: size, height: size, borderRadius: radius }]}
+        style={{ width: size, height: size, borderRadius: radius, backgroundColor: theme.divider }}
         onError={() => setError(true)}
       />
     );
@@ -24,26 +34,26 @@ export function AvatarPasajero({ fotoUrl, size = 48 }: Props) {
 
   return (
     <View
+      accessible
+      accessibilityLabel={label || 'Pasajero'}
       style={[
         styles.fallback,
-        { width: size, height: size, borderRadius: radius },
+        { width: size, height: size, borderRadius: radius, backgroundColor: theme.text },
       ]}
     >
-      <Ionicons name="person" size={size * 0.45} color={Colors.textSecondary} />
+      <Text style={[styles.initials, { color: theme.surface, fontSize: Math.round(size * 0.35) }]}>
+        {iniciales(nombre, apellido)}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  img: {
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
   fallback: {
-    backgroundColor: '#eef2f7',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  initials: {
+    fontFamily: FontFamily.bold,
   },
 });

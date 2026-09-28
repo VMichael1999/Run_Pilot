@@ -1,194 +1,97 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import { useConductorStore } from '@store/useConductorStore';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppHeader, Plate, Tag } from '@shared/components/ui';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Spacing } from '@theme/spacing';
+import { Duration } from '@theme/motion';
+import { mockConductor } from '../data/mockConductor';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'SeleccionarVehiculo'>;
 
-interface Vehiculo {
-  id: string;
-  marca: string;
-  modelo: string;
-  placa: string;
-  anio: number;
-  codigo: string;
-}
-
-const MOCK_VEHICULOS: Vehiculo[] = [
-  { id: '1', marca: 'BMW',   modelo: 'Serie 3', placa: 'CMT-3948', anio: 2020, codigo: 'XT980' },
-  { id: '2', marca: 'Honda', modelo: 'CRV',     placa: 'BS-6888',  anio: 2025, codigo: '9T-998' },
-];
-
-const LIMA_REGION = {
-  latitude: -12.0464,
-  longitude: -77.0428,
-  latitudeDelta: 0.05,
-  longitudeDelta: 0.05,
-};
-
-function VehiculoItem({
-  item,
-  seleccionado,
-  onSeleccionar,
-}: {
-  item: Vehiculo;
-  seleccionado: boolean;
-  onSeleccionar: (id: string) => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.card, seleccionado && styles.cardSeleccionado]}
-      onPress={() => onSeleccionar(item.id)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.cardIcono}>
-        <Ionicons name="car" size={22} color={seleccionado ? Colors.primary : Colors.textSecondary} />
-      </View>
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardNombre}>
-          {item.marca} {item.modelo}
-        </Text>
-        <Text style={styles.cardDetalle}>
-          {item.codigo} · {item.placa} · {item.anio}
-        </Text>
-      </View>
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={seleccionado ? Colors.primary : Colors.textSecondary}
-      />
-    </TouchableOpacity>
-  );
-}
-
+/**
+ * Elegir con que vehiculo salir. Como antes, elegir uno conecta al conductor
+ * y vuelve al inicio; la pantalla lo dice para que no sorprenda.
+ */
 export function SeleccionarVehiculoScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const setOnline = useConductorStore((s) => s.setOnline);
-  const [vehiculoId, setVehiculoId] = useState<string | null>(null);
+  const [elegido, setElegido] = useState<string | null>(null);
+  const activo = mockConductor.vehiculo.id;
 
-  const handleSeleccionar = (id: string) => {
-    setVehiculoId(id);
+  const elegir = (id: string) => {
+    if (elegido) return;
+    setElegido(id);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setTimeout(() => {
       setOnline(true);
       navigation.goBack();
-    }, 350);
+    }, Duration.slow);
   };
 
   return (
-    <View style={styles.container}>
-      {/* Mapa atenuado al fondo */}
-      <View style={styles.mapaContainer}>
-        <MapView
-          style={StyleSheet.absoluteFillObject}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={LIMA_REGION}
-          scrollEnabled={false}
-          zoomEnabled={false}
-          pitchEnabled={false}
-          rotateEnabled={false}
-        />
-        <View style={styles.mapaOverlay} />
-      </View>
-
-      {/* Panel inferior */}
-      <View style={[styles.panel, { paddingBottom: insets.bottom + Spacing.lg }]}>
-        <View style={styles.panelHandle} />
-        <Text style={styles.panelTitulo}>Seleccionar vehiculo</Text>
-
-        <FlatList
-          data={MOCK_VEHICULOS}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
-          renderItem={({ item }) => (
-            <VehiculoItem
-              item={item}
-              seleccionado={vehiculoId === item.id}
-              onSeleccionar={handleSeleccionar}
-            />
-          )}
-        />
-      </View>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
+      <AppHeader title="Vehículo" />
+      <ScrollView contentContainerStyle={[styles.pad, { paddingBottom: insets.bottom + Spacing['2xl'] }]}>
+        <Text style={[Type.body, { color: theme.textMuted }]}>
+          Elige con qué vehículo vas a salir. Al elegirlo te conectas y empiezas a recibir viajes.
+        </Text>
+        {mockConductor.vehiculos.map((v) => {
+          const sel = elegido === v.id;
+          return (
+            <Pressable
+              key={v.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: sel, disabled: !!elegido }}
+              accessibilityLabel={`${v.marca} ${v.modelo} ${v.color} ${v.anio}, placa ${v.placa}${v.id === activo ? ', vehículo activo' : ''}. Conectarme con este vehículo`}
+              onPress={() => elegir(v.id)}
+              style={({ pressed }) => [
+                styles.card,
+                { backgroundColor: theme.surface, borderColor: sel ? theme.text : theme.divider },
+                sel && styles.cardSel,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Plate placa={v.placa} />
+              <View style={styles.flex}>
+                <Text style={[styles.nombre, { color: theme.text }]}>{v.marca} {v.modelo}</Text>
+                <Text style={[Type.detail, { color: theme.textMuted }]}>{v.color} · {v.anio}</Text>
+              </View>
+              {sel ? (
+                <Ionicons name="checkmark-circle" size={24} color={theme.online} />
+              ) : v.id === activo ? (
+                <Tag label="Activo" tone="success" />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  mapaContainer: {
-    flex: 1,
-  },
-  mapaOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-  },
-  panel: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    ...Shadow.lg,
-  },
-  panelHandle: {
-    width: 36,
-    height: 4,
-    backgroundColor: Colors.divider,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: Spacing.md,
-  },
-  panelTitulo: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.lg,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.lg,
-  },
+  flex: { flex: 1 },
+  pad: { paddingHorizontal: 18, paddingTop: Spacing.xs, gap: Spacing.md },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1.5,
-    borderColor: Colors.divider,
     gap: Spacing.md,
+    minHeight: 72,
+    padding: 14,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
   },
-  cardSeleccionado: {
-    borderColor: Colors.primary,
-    backgroundColor: '#eaf2ff',
-  },
-  cardIcono: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#eef2f7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardInfo: { flex: 1 },
-  cardNombre: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-  },
-  cardDetalle: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
+  cardSel: { borderWidth: 2 },
+  pressed: { opacity: 0.7 },
+  nombre: { ...Type.bodyStrong },
 });

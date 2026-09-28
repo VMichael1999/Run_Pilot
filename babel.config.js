@@ -4,7 +4,7 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      ...(isTest ? [] : ['react-native-reanimated/plugin']),
+      ...(isTest ? [] : ['react-native-worklets/plugin']),
       [
         'module-resolver',
         {

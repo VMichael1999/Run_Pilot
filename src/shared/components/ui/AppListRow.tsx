@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing } from '@theme/spacing';
+import { Type } from '@theme/fonts';
+import { Hit, Spacing } from '@theme/spacing';
 
 interface AppListRowProps {
   title: string;
@@ -11,6 +11,7 @@ interface AppListRowProps {
   right?: React.ReactNode;
   onPress?: () => void;
   showDivider?: boolean;
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
   titleStyle?: StyleProp<TextStyle>;
   subtitleStyle?: StyleProp<TextStyle>;
@@ -24,29 +25,45 @@ export function AppListRow({
   right,
   onPress,
   showDivider = false,
+  accessibilityLabel,
   style,
   titleStyle,
   subtitleStyle,
   contentStyle,
 }: AppListRowProps) {
   const theme = useAppTheme();
-  const Container = onPress ? TouchableOpacity : View;
 
-  return (
-    <Container
-      style={[styles.row, showDivider && { borderBottomWidth: 1, borderBottomColor: theme.divider }, style]}
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
+  const body = (
+    <>
       {left ? <View style={styles.side}>{left}</View> : null}
       <View style={[styles.content, contentStyle]}>
-        <Text style={[styles.title, { color: theme.text }, titleStyle]}>{title}</Text>
+        <Text style={[Type.label, { color: theme.text }, titleStyle]}>{title}</Text>
         {subtitle ? (
-          <Text style={[styles.subtitle, { color: theme.textMuted }, subtitleStyle]}>{subtitle}</Text>
+          <Text style={[Type.caption, styles.subtitle, { color: theme.textMuted }, subtitleStyle]}>{subtitle}</Text>
         ) : null}
       </View>
       {right ? <View style={styles.side}>{right}</View> : null}
-    </Container>
+    </>
+  );
+
+  const rowStyle = [
+    styles.row,
+    showDivider && { borderBottomWidth: 1, borderBottomColor: theme.divider },
+    style,
+  ];
+
+  if (!onPress) return <View style={rowStyle}>{body}</View>;
+
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? (subtitle ? `${title}, ${subtitle}` : title)}
+      style={rowStyle}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      {body}
+    </TouchableOpacity>
   );
 }
 
@@ -54,6 +71,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: Hit.min,
     paddingVertical: Spacing.md,
     gap: Spacing.md,
   },
@@ -64,13 +82,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  title: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-  },
   subtitle: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    marginTop: 2,
+    marginTop: Spacing.xxs,
   },
 });
