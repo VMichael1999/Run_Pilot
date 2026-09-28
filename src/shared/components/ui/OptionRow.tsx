@@ -13,16 +13,19 @@ interface Props {
   /** Logo del medio de pago; si esta, reemplaza al icono. */
   logo?: LogoPago;
   selected: boolean;
+  /** Opcion visible pero no elegible (el detalle explica por que). */
+  disabled?: boolean;
   onPress: () => void;
 }
 
 /** Opcion de una lista de eleccion unica (metodo de pago, destino del retiro). */
-export function OptionRow({ titulo, detalle, icono, logo, selected, onPress }: Props) {
+export function OptionRow({ titulo, detalle, icono, logo, selected, disabled = false, onPress }: Props) {
   const theme = useAppTheme();
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, disabled }}
+      disabled={disabled}
       accessibilityLabel={detalle ? `${titulo}. ${detalle}` : titulo}
       onPress={onPress}
       style={({ pressed }) => [
@@ -33,6 +36,7 @@ export function OptionRow({ titulo, detalle, icono, logo, selected, onPress }: P
           borderWidth: selected ? 2 : 1,
         },
         pressed && styles.pressed,
+        disabled && styles.disabled,
       ]}
     >
       {logo ? (
@@ -72,6 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
   },
   pressed: { opacity: 0.7 },
+  disabled: { opacity: 0.5 },
   logo: { width: 40, height: 40 },
   icon: { width: 40, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center' },
 });

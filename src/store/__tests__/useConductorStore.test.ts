@@ -46,3 +46,24 @@ describe('useConductorStore · viaje', () => {
     expect(useConductorStore.getState().vehiculoId).toBe('veh-2');
   });
 });
+
+describe('useConductorStore · cancelar', () => {
+  it('cancelar limpia el viaje activo, no suma ganancia y registra el motivo', () => {
+    useConductorStore.setState({ ingresosDia: 0, cancelaciones: [] });
+    const historialAntes = useConductorStore.getState().historial.length;
+    useConductorStore.getState().setSolicitudActual(mockSolicitudes[0]);
+    useConductorStore.getState().avanzarEstado();
+    useConductorStore.getState().avanzarEstado(); // esperando
+    useConductorStore.getState().cancelarViaje('no_se_presento');
+    const st = useConductorStore.getState();
+    expect(st).toMatchObject({ solicitudActual: null, estadoViaje: null, esperandoDesde: null, ingresosDia: 0 });
+    expect(st.historial).toHaveLength(historialAntes);
+    expect(st.cancelaciones[0]).toMatchObject({ motivo: 'no_se_presento', solicitud: { id: 'sol-001' } });
+  });
+
+  it('sin viaje activo no hace nada', () => {
+    useConductorStore.setState({ cancelaciones: [] });
+    useConductorStore.getState().cancelarViaje('otro');
+    expect(useConductorStore.getState().cancelaciones).toHaveLength(0);
+  });
+});

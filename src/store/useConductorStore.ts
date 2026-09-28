@@ -1,5 +1,19 @@
 import { create } from 'zustand';
 import type { EstadoViaje, Solicitud, ViajeCompletado } from '@features/conductor/types';
+
+/** Motivos para cancelar un viaje antes de que suba el pasajero. */
+export type MotivoCancelacion =
+  | 'no_se_presento'
+  | 'pasajero_pidio'
+  | 'no_puedo_llegar'
+  | 'problema_vehiculo'
+  | 'otro';
+
+export interface Cancelacion {
+  solicitud: Solicitud;
+  motivo: MotivoCancelacion;
+  fechaMs: number;
+}
 import { mockHistorial } from '@features/conductor/data/mockHistorial';
 import { mockConductor } from '@features/conductor/data/mockConductor';
 import { desgloseCobro } from '@shared/utils/cobro';
@@ -21,6 +35,9 @@ interface ConductorState {
   setEstadoViaje: (estado: EstadoViaje | null) => void;
   avanzarEstado: () => void;
   finalizarViaje: () => void;
+  /** Cancelaciones de la sesion; la ultima se muestra en el inicio. */
+  cancelaciones: Cancelacion[];
+  cancelarViaje: (motivo: MotivoCancelacion) => void;
   actualizarCalificacion: (viajeId: string, calificacion: number) => void;
 }
 
@@ -41,6 +58,7 @@ export const useConductorStore = create<ConductorState>((set, get) => ({
   ingresosDia:    0,
   vehiculoId:     mockConductor.vehiculos[0].id,
   historial:      [...mockHistorial],
+  cancelaciones:  [],
 
   setOnline: (online) => set({ isOnline: online }),
 
@@ -81,6 +99,17 @@ export const useConductorStore = create<ConductorState>((set, get) => ({
       ingresosDia:  state.ingresosDia + desgloseCobro(solicitud.precio, mockConductor.comision).ganancia,
       historial:    [nuevoViaje, ...state.historial],
       // solicitudActual se mantiene para CalificarScreen
+    }));
+  },
+
+  cancelarViaje: (motivo) => {
+    const solicitud = get().solicitudActual;
+    if (!solicitud) return;
+    set((state) => ({
+      solicitudActual: null,
+      estadoViaje:     null,
+      esperandoDesde:  null,
+      cancelaciones:   [{ solicitud, motivo, fechaMs: Date.now() }, ...state.cancelaciones],
     }));
   },
 

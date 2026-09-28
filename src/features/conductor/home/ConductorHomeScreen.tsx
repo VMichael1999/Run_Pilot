@@ -15,6 +15,7 @@ import { DrawerMenu } from './DrawerMenu';
 import type { DrawerMenuItem } from './DrawerMenu';
 import { IncomingRequestOverlay } from './components/IncomingRequestOverlay';
 import { ViajeEnCursoBanner } from './components/ViajeEnCursoBanner';
+import { ViajeCanceladoAviso } from './components/ViajeCanceladoAviso';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { mockConductor } from '../data/mockConductor';
 import { periodoHoy, viajesConGanancia } from '../ingresos/resumen';
@@ -80,6 +81,7 @@ export function ConductorHomeScreen() {
   const solicitudActual   = useConductorStore((s) => s.solicitudActual);
   const estadoViaje       = useConductorStore((s) => s.estadoViaje);
   const esperandoDesde    = useConductorStore((s) => s.esperandoDesde);
+  const ultimaCancelacion = useConductorStore((s) => s.cancelaciones[0]);
   // Viaje aceptado que aun no termina de cobrarse
   const viajeActivo = solicitudActual && estadoViaje && estadoViaje !== 'finalizado'
     ? { solicitud: solicitudActual, estado: estadoViaje }
@@ -267,6 +269,7 @@ export function ConductorHomeScreen() {
             onContinuar={() => navigation.navigate('Viaje', { solicitudId: viajeActivo.solicitud.id })}
           />
         )}
+        {!viajeActivo && <ViajeCanceladoAviso cancelacion={ultimaCancelacion} />}
 
         {viajeActivo ? (
           <Animated.View
