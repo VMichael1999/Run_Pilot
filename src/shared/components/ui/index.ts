@@ -20,3 +20,4 @@ export { Chip } from './Chip';
 export { StarRating } from './StarRating';
 export { Segmented } from './Segmented';
 export { Skeleton } from './Skeleton';
+export { Price } from './Price';

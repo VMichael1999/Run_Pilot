@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { Solicitud } from '@features/conductor/types';
 import { mockConductor } from '@features/conductor/data/mockConductor';
-import { AppButton } from '@shared/components/ui';
+import { AppButton, Price } from '@shared/components/ui';
 import { formatSoles } from '@shared/utils/format';
 import { desgloseCobro, distritoDe, esEfectivo } from '@shared/utils/cobro';
 import { useAppTheme } from '@theme/useAppTheme';
@@ -81,10 +81,7 @@ export function PanelPago({ solicitud, distanciaKm, onFinalizar }: Props) {
             <Text style={[styles.k, { color: theme.textMuted }]}>
               {efectivo ? 'Cobra en efectivo' : `Pagado con ${metodoPago}`}
             </Text>
-            <Text style={[Type.priceXL, { color: theme.text }]}>
-              <Text style={Type.currency}>S/ </Text>
-              {tarifa.toFixed(2)}
-            </Text>
+            <Price monto={tarifa} size="xl" color={theme.text} />
             <View style={styles.hint}>
               <Ionicons
                 name={efectivo ? 'cash-outline' : 'phone-portrait-outline'}

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import { useConductorStore } from '@store/useConductorStore';
-import { AppHeader } from '@shared/components/ui';
+import { AppHeader, Price } from '@shared/components/ui';
 import { fechaCorta, nombreMes } from '@shared/utils/fecha';
 import { formatSoles } from '@shared/utils/format';
 import { useAppTheme } from '@theme/useAppTheme';
@@ -63,10 +63,7 @@ export function BilleteraScreen(_: Props) {
         <View style={[styles.bal, { backgroundColor: bg }]}>
           <View accessible accessibilityLabel={`Saldo disponible ${formatSoles(saldo)}`}>
             <Text style={[styles.k, { color: fg }]}>Saldo disponible</Text>
-            <Text style={[Type.price, { color: fg }]}>
-              <Text style={Type.currency}>S/ </Text>
-              {saldo.toFixed(2)}
-            </Text>
+            <Price monto={saldo} color={fg} />
           </View>
           <Text style={[styles.note, { color: fg }]}>
             Las comisiones de tus viajes en efectivo se descuentan de este saldo.

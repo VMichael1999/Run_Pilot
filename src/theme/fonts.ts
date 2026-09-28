@@ -29,15 +29,15 @@ export const FontAssets = {
  */
 export const Type = {
   /** Cifra protagonista: precio de la solicitud, saldo. */
-  price:      { fontFamily: FontFamily.bold, fontSize: 44, lineHeight: 46, letterSpacing: -1.3 },
+  price:      { fontFamily: FontFamily.bold, fontSize: 44, lineHeight: 54, letterSpacing: -1.3 },
   /** Monto a cobrar en el panel de cobro. */
-  priceXL:    { fontFamily: FontFamily.bold, fontSize: 52, lineHeight: 54, letterSpacing: -1.5 },
+  priceXL:    { fontFamily: FontFamily.bold, fontSize: 52, lineHeight: 64, letterSpacing: -1.5 },
   /** "S/" delante del precio. */
-  currency:   { fontFamily: FontFamily.semibold, fontSize: 22, lineHeight: 26 },
+  currency:   { fontFamily: FontFamily.semibold, fontSize: 22, lineHeight: 30 },
   /** Total de ingresos. */
-  hero:       { fontFamily: FontFamily.bold, fontSize: 40, lineHeight: 42, letterSpacing: -1.2 },
+  hero:       { fontFamily: FontFamily.bold, fontSize: 40, lineHeight: 50, letterSpacing: -1.2 },
   /** Titulo de pantalla de entrada (login, codigo). */
-  display:    { fontFamily: FontFamily.bold, fontSize: 31, lineHeight: 34, letterSpacing: -0.8 },
+  display:    { fontFamily: FontFamily.bold, fontSize: 31, lineHeight: 38, letterSpacing: -0.8 },
   /** Titulo de pantalla interna (Ingresos, Billetera). */
   title:      { fontFamily: FontFamily.bold, fontSize: 24, lineHeight: 29, letterSpacing: -0.5 },
   /** Cifra secundaria destacada (minutos al destino). */

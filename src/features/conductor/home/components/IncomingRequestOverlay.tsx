@@ -1,19 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
-import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Solicitud } from '@features/conductor/types';
 import { fetchRoute } from '@features/conductor/viaje/services/directionsService';
 import type { LatLng } from '@features/conductor/viaje/services/directionsService';
-import { AvatarPasajero, CountdownRing, RouteStops, SlideToConfirm, Tag } from '@shared/components/ui';
+import { AvatarPasajero, CountdownRing, Price, RouteStops, SlideToConfirm, Tag } from '@shared/components/ui';
 import { DestinationMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
+import { RoutePolyline } from '@shared/components/map/RoutePolyline';
 import { distanciaRutaKm } from '@shared/utils/geo';
 import { esEfectivo } from '@shared/utils/cobro';
-import { useAppTheme, useIsDark } from '@theme/useAppTheme';
-import { MapStyle } from '@theme/mapStyle';
+import { useAppTheme } from '@theme/useAppTheme';
 import { FontFamily, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { Duration, Spring } from '@theme/motion';
@@ -27,7 +27,6 @@ interface Props {
 export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Props) {
   const insets = useSafeAreaInsets();
   const theme  = useAppTheme();
-  const isDark = useIsDark();
   const mapRef = useRef<MapView>(null);
 
   const limite = solicitud.tiempoLimiteSeg;
@@ -99,7 +98,6 @@ export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Pro
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
-        customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
         initialRegion={
           origen
             ? { ...origen.coordenadas, latitudeDelta: 0.05, longitudeDelta: 0.05 }
@@ -115,9 +113,7 @@ export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Pro
       >
         {origen && <PickupMarker coordinate={origen.coordenadas} />}
         {destino && <DestinationMarker coordinate={destino.coordenadas} />}
-        {routeCoords.length > 1 && (
-          <Polyline coordinates={routeCoords} strokeColor={theme.route} strokeWidth={5} />
-        )}
+        <RoutePolyline coordinates={routeCoords} />
       </MapView>
 
       {/* El mapa se atenua para que la tarjeta sea lo unico importante */}
@@ -151,13 +147,12 @@ export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Pro
         </View>
 
         <View style={styles.figures}>
-          <Text
-            style={[styles.price, { color: theme.text }]}
+          <Price
+            monto={solicitud.precio}
+            simbolo={solicitud.simboloMoneda}
+            color={theme.text}
             accessibilityLabel={`Tarifa ${solicitud.simboloMoneda} ${solicitud.precio.toFixed(2)}`}
-          >
-            <Text style={Type.currency}>{solicitud.simboloMoneda} </Text>
-            {solicitud.precio.toFixed(2)}
-          </Text>
+          />
           {(recojo[0] || recojo[1]) && (
             <Text style={[styles.eta, { color: theme.text }]}>
               {recojo[0]}
@@ -235,7 +230,6 @@ const styles = StyleSheet.create({
   },
   tags: { flexDirection: 'row', gap: 6 },
   figures: { gap: 6 },
-  price: { ...Type.price },
   eta: { ...Type.bodyStrong },
   etaMuted: { fontFamily: FontFamily.medium },
   pax: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
