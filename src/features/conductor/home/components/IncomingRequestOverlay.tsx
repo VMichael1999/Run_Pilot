@@ -178,7 +178,7 @@ export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Pro
         <View style={styles.pax}>
           <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={40} />
           <View>
-            <Text style={[Type.label, { color: theme.text }]}>
+            <Text style={[Type.name, { color: theme.text }]}>
               {pasajero.nombre} {pasajero.apellido.charAt(0)}.
             </Text>
             <View style={styles.rating}>

@@ -66,7 +66,7 @@ export function ExperienciaScreen() {
               <AvatarPasajero nombre={r.nombre} apellido={r.apellido} size={36} />
               <View style={[styles.flex, styles.gap2]}>
                 <View style={styles.rowTop}>
-                  <Text style={[Type.label, { color: theme.text }]}>{r.nombre} {r.apellido.charAt(0)}.</Text>
+                  <Text style={[Type.name, { color: theme.text }]}>{r.nombre} {r.apellido.charAt(0)}.</Text>
                   <Text style={[Type.caption, { color: theme.textMuted }]}>{haceTiempo(ahora - r.haceMs, ahora)}</Text>
                 </View>
                 <Estrellas n={r.puntaje} />

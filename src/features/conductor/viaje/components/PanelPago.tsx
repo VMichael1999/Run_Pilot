@@ -171,7 +171,8 @@ const styles = StyleSheet.create({
   },
   rowSep: { borderTopWidth: 1 },
   rowText: { flex: 1, ...Type.row },
-  rowVal: { ...Type.label },
+  // Cifras y el total en negrita; los conceptos en regular
+  rowVal: { ...Type.label, fontFamily: FontFamily.bold },
   total: { fontSize: Type.heading.fontSize, lineHeight: Type.heading.lineHeight },
   textBtn: { minHeight: Hit.min, alignItems: 'center', justifyContent: 'center' },
   underline: { textDecorationLine: 'underline' },

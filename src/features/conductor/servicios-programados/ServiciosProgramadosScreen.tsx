@@ -79,7 +79,7 @@ export function ServiciosProgramadosScreen({ navigation }: Props) {
         stickySectionHeadersEnabled={false}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + Spacing['2xl'] }]}
         renderSectionHeader={({ section }) => (
-          <Text accessibilityRole="header" style={[styles.secT, { color: theme.textMuted }]}>{section.titulo}</Text>
+          <Text accessibilityRole="header" style={[styles.secT, { color: theme.text }]}>{section.titulo}</Text>
         )}
         ItemSeparatorComponent={() => <View style={{ height: Spacing.md }} />}
         renderItem={({ item }) => <ServicioCard item={item} ms={item.ms} />}
@@ -100,7 +100,7 @@ export function ServiciosProgramadosScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { paddingHorizontal: 18 },
-  secT: { ...Type.section, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
+  secT: { ...Type.sectionTitle, paddingTop: Spacing.lg, paddingBottom: Spacing.sm },
   card: { borderRadius: BorderRadius.lg, borderWidth: 1, padding: 14, gap: Spacing.sm + 2 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

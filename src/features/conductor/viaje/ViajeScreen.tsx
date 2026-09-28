@@ -296,7 +296,7 @@ export function ViajeScreen({ route, navigation }: Props) {
             <View style={styles.pax}>
               <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={44} />
               <View style={styles.flex}>
-                <Text style={[Type.label, { color: theme.text }]} numberOfLines={1}>
+                <Text style={[Type.name, { color: theme.text }]} numberOfLines={1}>
                   {fase === 'viaje' ? `${pasajero.nombre} ${pasajero.apellido} · a bordo` : `${pasajero.nombre} ${pasajero.apellido}`}
                 </Text>
                 <View style={styles.rating}>

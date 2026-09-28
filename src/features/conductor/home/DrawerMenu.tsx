@@ -123,7 +123,7 @@ export function DrawerMenu({ visible, onClose, items, perfil, onPerfil }: Props)
               </Text>
             </View>
             <View style={styles.flex}>
-              <Text style={[Type.label, { color: theme.text }]}>{perfil.nombre} {perfil.apellido}</Text>
+              <Text style={[Type.name, { color: theme.text }]}>{perfil.nombre} {perfil.apellido}</Text>
               <View style={styles.rating}>
                 <Ionicons name="star" size={12} color={theme.textMuted} />
                 <Text style={[Type.detail, { color: theme.textMuted }]}>

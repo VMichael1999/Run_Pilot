@@ -125,7 +125,7 @@ export function CalificarScreen({ route, navigation }: Props) {
         <StarRating value={estrellas} onChange={setEstrellas} />
 
         <View style={styles.block}>
-          <Text style={[Type.label, { color: theme.text }]}>¿Qué destacarías?</Text>
+          <Text accessibilityRole="header" style={[Type.sectionTitle, { color: theme.text }]}>¿Qué destacarías?</Text>
           <View style={styles.chips}>
             {ETIQUETAS.map((e) => (
               <Chip key={e} label={e} selected={etiquetas.includes(e)} onToggle={() => toggle(e)} />

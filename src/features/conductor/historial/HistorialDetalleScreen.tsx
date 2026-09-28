@@ -128,7 +128,7 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
         <View style={[styles.pax, { borderColor: theme.divider }]}>
           <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={40} />
           <View style={styles.flex}>
-            <Text style={[Type.label, { color: theme.text }]}>{pasajero.nombre} {pasajero.apellido}</Text>
+            <Text style={[Type.name, { color: theme.text }]}>{pasajero.nombre} {pasajero.apellido}</Text>
             <Text style={[Type.caption, { color: theme.textMuted }]}>
               {pasajero.calificacion.toFixed(1)} · {pasajero.totalViajes} viajes
             </Text>
@@ -191,7 +191,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md, paddingVertical: Spacing.md, paddingHorizontal: 14 },
   rowSep: { borderTopWidth: 1 },
   rowText: { flex: 1, ...Type.row },
-  rowStrong: { ...Type.label },
+  // Cifras y el total en negrita; los conceptos en regular
+  rowStrong: { ...Type.label, fontFamily: FontFamily.bold },
   total: { fontSize: Type.heading.fontSize, lineHeight: Type.heading.lineHeight },
   missing: { paddingHorizontal: 18, gap: Spacing.sm, paddingTop: Spacing.xl },
 });
