@@ -17,7 +17,7 @@
 | agrupar historial por día | src/features/conductor/historial/__tests__/agrupar.test.ts | 1 test, en verde |
 | LoginScreen | pendiente | sin tests |
 | LoginVerificacionScreen | pendiente | sin tests |
-| SolicitudesScreen | pendiente | sin tests |
+| Solicitudes + SolicitudDetalle + ServiciosProgramados | src/features/conductor/solicitudes/__tests__/SolicitudesScreen.test.tsx | 3 tests, en verde |
 | IngresosScreen + BilleteraScreen | src/features/conductor/ingresos/__tests__/IngresosScreen.test.tsx | 5 tests, en verde |
 | resumen de ingresos (hoy, semana, mes) | src/features/conductor/ingresos/__tests__/resumen.test.ts | 4 tests, en verde |
 | fecha (hoy/ayer, semana, mes, título de día) | src/shared/utils/__tests__/fecha.test.ts | 5 tests, en verde |
