@@ -16,6 +16,9 @@ export const Palette = {
   splashText: '#8E969D',
   white:     '#FFFFFF',
   black:     '#000000',
+  // SOS: mismo rojo de dia y de noche, con texto blanco (5.6:1)
+  sos:       '#C8261B',
+  sosHold:   '#8E1A12', // relleno mientras se mantiene presionado
 } as const;
 
 export const ThemeColors = {
