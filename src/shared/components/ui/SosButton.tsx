@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@theme/useAppTheme';
+import { Palette } from '@theme/colors';
 import { FontFamily, Type } from '@theme/fonts';
-import { BorderRadius, Hit, Spacing } from '@theme/spacing';
+import { BorderRadius, Hit, Shadow, Spacing } from '@theme/spacing';
 import { AppButton } from './AppButton';
 
 /** Numero al que llama el SOS. Policia Nacional del Peru. Cambiar aqui si se decide otro destino. */
@@ -22,6 +31,19 @@ export function SosButton() {
   const insets = useSafeAreaInsets();
   const [pista, setPista] = useState(false);
   const [abierto, setAbierto] = useState(false);
+  const reducedMotion = useReducedMotion();
+
+  // Relleno que avanza mientras se mantiene presionado: muestra cuanto falta
+  const carga = useSharedValue(0);
+  const empezarCarga = () => {
+    if (reducedMotion) return;
+    carga.value = withTiming(1, { duration: MANTENER_MS, easing: Easing.linear });
+  };
+  const soltar = () => {
+    cancelAnimation(carga);
+    carga.value = 0;
+  };
+  const cargaStyle = useAnimatedStyle(() => ({ width: `${carga.value * 100}%` }));
 
   const mostrarPista = () => {
     setPista(true);
@@ -45,19 +67,18 @@ export function SosButton() {
           if (e.nativeEvent.actionName === 'longpress' || e.nativeEvent.actionName === 'activate') activar();
         }}
         onPress={mostrarPista}
-        onLongPress={activar}
+        onLongPress={() => {
+          soltar();
+          activar();
+        }}
+        onPressIn={empezarCarga}
+        onPressOut={soltar}
         delayLongPress={MANTENER_MS}
-        hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-        style={({ pressed }) => [
-          styles.pill,
-          {
-            backgroundColor: pressed ? theme.dangerSoft : theme.surface,
-            borderColor: theme.danger,
-          },
-        ]}
+        style={styles.pill}
       >
-        <Ionicons name="shield-outline" size={16} color={theme.danger} />
-        <Text style={[styles.text, { color: theme.danger }]}>SOS</Text>
+        <Animated.View style={[styles.carga, cargaStyle]} pointerEvents="none" />
+        <Ionicons name="shield-checkmark" size={22} color={Palette.white} />
+        <Text style={styles.text}>SOS</Text>
       </Pressable>
 
       {pista && (
@@ -103,16 +124,24 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    minHeight: 36,
-    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+    minHeight: Hit.min,
+    paddingLeft: 14,
+    paddingRight: 18,
     borderRadius: BorderRadius.full,
-    borderWidth: 1.5,
+    backgroundColor: Palette.sos,
+    overflow: 'hidden',
+    ...Shadow.raise,
   },
-  text: { ...Type.section, fontFamily: FontFamily.bold },
+  carga: {
+    ...StyleSheet.absoluteFillObject,
+    right: undefined,
+    backgroundColor: Palette.sosHold,
+  },
+  text: { ...Type.field, fontFamily: FontFamily.bold, color: Palette.white, letterSpacing: 0.5 },
   tip: {
     position: 'absolute',
-    top: 44,
+    top: Hit.min + Spacing.xs,
     right: 0,
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: Spacing.xs + 2,

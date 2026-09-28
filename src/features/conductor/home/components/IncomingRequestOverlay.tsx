@@ -14,6 +14,7 @@ import { RoutePolyline } from '@shared/components/map/RoutePolyline';
 import { distanciaRutaKm } from '@shared/utils/geo';
 import { esEfectivo } from '@shared/utils/cobro';
 import { useAppTheme } from '@theme/useAppTheme';
+import { useMapStyle } from '@shared/components/map/mapStyle';
 import { FontFamily, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { Duration, Spring } from '@theme/motion';
@@ -27,6 +28,7 @@ interface Props {
 export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Props) {
   const insets = useSafeAreaInsets();
   const theme  = useAppTheme();
+  const mapStyle = useMapStyle();
   const mapRef = useRef<MapView>(null);
 
   const limite = solicitud.tiempoLimiteSeg;
@@ -98,6 +100,7 @@ export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Pro
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
+        customMapStyle={mapStyle}
         initialRegion={
           origen
             ? { ...origen.coordenadas, latitudeDelta: 0.05, longitudeDelta: 0.05 }
@@ -175,7 +178,7 @@ export function IncomingRequestOverlay({ solicitud, onAceptar, onRechazar }: Pro
         <View style={styles.pax}>
           <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={40} />
           <View>
-            <Text style={[Type.label, { color: theme.text }]}>
+            <Text style={[Type.name, { color: theme.text }]}>
               {pasajero.nombre} {pasajero.apellido.charAt(0)}.
             </Text>
             <View style={styles.rating}>

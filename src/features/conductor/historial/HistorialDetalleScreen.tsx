@@ -15,6 +15,7 @@ import { fechaCorta } from '@shared/utils/fecha';
 import { formatSoles } from '@shared/utils/format';
 import { distanciaRutaKm } from '@shared/utils/geo';
 import { useAppTheme } from '@theme/useAppTheme';
+import { useMapStyle } from '@shared/components/map/mapStyle';
 import { FontFamily, Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
@@ -34,6 +35,7 @@ function referencia(id: string): string {
 export function HistorialDetalleScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
+  const mapStyle = useMapStyle();
   const { viajeId } = route.params;
   const viaje = useConductorStore((s) => s.historial.find((v) => v.id === viajeId));
   const mapRef = useRef<MapView>(null);
@@ -103,6 +105,7 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
             ref={mapRef}
             style={StyleSheet.absoluteFillObject}
             provider={PROVIDER_GOOGLE}
+        customMapStyle={mapStyle}
             initialRegion={{ ...origen.coordenadas, latitudeDelta: 0.06, longitudeDelta: 0.06 }}
             onMapReady={encuadrar}
             scrollEnabled={false}
@@ -125,7 +128,7 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
         <View style={[styles.pax, { borderColor: theme.divider }]}>
           <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={40} />
           <View style={styles.flex}>
-            <Text style={[Type.label, { color: theme.text }]}>{pasajero.nombre} {pasajero.apellido}</Text>
+            <Text style={[Type.name, { color: theme.text }]}>{pasajero.nombre} {pasajero.apellido}</Text>
             <Text style={[Type.caption, { color: theme.textMuted }]}>
               {pasajero.calificacion.toFixed(1)} · {pasajero.totalViajes} viajes
             </Text>
@@ -188,7 +191,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md, paddingVertical: Spacing.md, paddingHorizontal: 14 },
   rowSep: { borderTopWidth: 1 },
   rowText: { flex: 1, ...Type.row },
-  rowStrong: { ...Type.label },
+  // Cifras y el total en negrita; los conceptos en regular
+  rowStrong: { ...Type.label, fontFamily: FontFamily.bold },
   total: { fontSize: Type.heading.fontSize, lineHeight: Type.heading.lineHeight },
   missing: { paddingHorizontal: 18, gap: Spacing.sm, paddingTop: Spacing.xl },
 });

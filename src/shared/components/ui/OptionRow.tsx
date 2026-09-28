@@ -1,20 +1,23 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@theme/useAppTheme';
 import { Type } from '@theme/fonts';
 import { BorderRadius, Spacing } from '@theme/spacing';
+import { LogosPago, type LogoPago } from './logosPago';
 
 interface Props {
   titulo: string;
   detalle?: string;
   icono: keyof typeof Ionicons.glyphMap;
+  /** Logo del medio de pago; si esta, reemplaza al icono. */
+  logo?: LogoPago;
   selected: boolean;
   onPress: () => void;
 }
 
 /** Opcion de una lista de eleccion unica (metodo de pago, destino del retiro). */
-export function OptionRow({ titulo, detalle, icono, selected, onPress }: Props) {
+export function OptionRow({ titulo, detalle, icono, logo, selected, onPress }: Props) {
   const theme = useAppTheme();
   return (
     <Pressable
@@ -32,9 +35,18 @@ export function OptionRow({ titulo, detalle, icono, selected, onPress }: Props) 
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.icon, { backgroundColor: theme.background }]}>
-        <Ionicons name={icono} size={20} color={theme.text} />
-      </View>
+      {logo ? (
+        <Image
+          source={LogosPago[logo]}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <View style={[styles.icon, { backgroundColor: theme.background }]}>
+          <Ionicons name={icono} size={20} color={theme.text} />
+        </View>
+      )}
       <View style={styles.flex}>
         <Text style={[Type.label, { color: theme.text }]}>{titulo}</Text>
         {detalle ? <Text style={[Type.caption, { color: theme.textMuted }]}>{detalle}</Text> : null}
@@ -60,5 +72,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
   },
   pressed: { opacity: 0.7 },
+  logo: { width: 40, height: 40 },
   icon: { width: 40, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center' },
 });

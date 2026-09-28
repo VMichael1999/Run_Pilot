@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
-import { AppButton, AppHeader, AppSectionTitle, Segmented } from '@shared/components/ui';
+import { AppHeader, AppSectionTitle, Segmented } from '@shared/components/ui';
 import { useThemeStore, type ThemePreference } from '@store/useThemeStore';
 import { useAppTheme } from '@theme/useAppTheme';
 import { Palette } from '@theme/colors';
@@ -62,18 +62,17 @@ export function ConfiguracionScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {__DEV__ && (
-          <AppButton
-            label="Catálogo de componentes (desarrollo)"
-            variant="ghost"
-            size="md"
-            onPress={() => navigation.navigate('Catalogo')}
-          />
-        )}
 
-        <Text style={[Type.caption, styles.version, { color: theme.textMuted }]}>
-          Run Pilot {appConfig.expo.version}
-        </Text>
+        {/* Acceso oculto al catalogo de componentes: solo en desarrollo, manteniendo presionada la version */}
+        <Pressable
+          onLongPress={__DEV__ ? () => navigation.navigate('Catalogo') : undefined}
+          delayLongPress={1500}
+          accessible={false}
+        >
+          <Text style={[Type.caption, styles.version, { color: theme.textMuted }]}>
+            Run Pilot {appConfig.expo.version}
+          </Text>
+        </Pressable>
       </ScrollView>
     </View>
   );

@@ -1,4 +1,4 @@
-import { ThemeColors } from '../colors';
+import { Palette, ThemeColors } from '../colors';
 
 function luminance(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -41,4 +41,9 @@ describe('ThemeColors', () => {
       expect(contrast(theme[fg], theme[bg])).toBeGreaterThanOrEqual(4.5);
     });
   });
+});
+
+it('SOS: texto blanco sobre rojo y sobre el relleno de carga con contraste >= 4.5', () => {
+  expect(contrast(Palette.white, Palette.sos)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(Palette.white, Palette.sosHold)).toBeGreaterThanOrEqual(4.5);
 });

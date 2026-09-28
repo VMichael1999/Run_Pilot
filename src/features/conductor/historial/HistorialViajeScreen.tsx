@@ -113,7 +113,7 @@ export function HistorialViajeScreen({ navigation }: Props) {
             accessibilityLabel={`${section.titulo}, ${pluralViajes(section.viajes)}, ${formatSoles(section.ganado)} ganados`}
           >
             <Text style={[styles.secT, { color: theme.textMuted }]}>
-              {section.titulo} · {pluralViajes(section.viajes)}
+              <Text style={[Type.sectionTitle, { color: theme.text }]}>{section.titulo}</Text> · {pluralViajes(section.viajes)}
             </Text>
             <Text style={[styles.secT, { color: theme.textMuted }]}>{formatSoles(section.ganado)} ganados</Text>
           </View>

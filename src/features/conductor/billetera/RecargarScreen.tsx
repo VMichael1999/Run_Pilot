@@ -19,6 +19,7 @@ export function RecargarScreen({ navigation }: Props) {
         { value: '50', label: 'S/ 50' },
         { value: '100', label: 'S/ 100' },
       ]}
+      montoInicial="20"
       seccionOpciones="Método de recarga"
       opciones={metodosRecarga}
       min={MONTO_MIN}

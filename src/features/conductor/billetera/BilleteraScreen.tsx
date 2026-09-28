@@ -85,7 +85,7 @@ export function BilleteraScreen({ navigation }: Props) {
 
         <View>
           <View style={styles.secH}>
-            <Text accessibilityRole="header" style={[styles.secT, { color: theme.textMuted }]}>Movimientos</Text>
+            <Text accessibilityRole="header" style={[Type.sectionTitle, { color: theme.text }]}>Movimientos</Text>
             <Text style={[styles.secT, { color: theme.textMuted }]}>{nombreMes()}</Text>
           </View>
           {movimientos.length > 0 ? (
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bOutline: { borderWidth: 1.5, opacity: 0.9 },
-  secH: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: Spacing.xs },
+  secH: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: Spacing.xs },
   secT: { ...Type.section },
   empty: { paddingVertical: Spacing.lg },
 });

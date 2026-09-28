@@ -1,47 +1,42 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, Type } from '@theme/fonts';
-import { BorderRadius, Shadow } from '@theme/spacing';
+import { StyleSheet } from 'react-native';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
+import { useAppTheme, useIsDark } from '@theme/useAppTheme';
+import { FontFamily } from '@theme/fonts';
 
 interface Props<T extends string> {
   options: { value: T; label: string }[];
-  value: T;
+  /** Valor seleccionado; si no coincide con ninguna opcion no se marca ninguna. */
+  value: T | '';
   onChange: (value: T) => void;
 }
 
-/** Control segmentado (Hoy / Semana / Mes). */
+/**
+ * Control segmentado estilo Cupertino. En iOS es el UISegmentedControl nativo;
+ * en Android la libreria dibuja la misma forma en JS.
+ */
 export function Segmented<T extends string>({ options, value, onChange }: Props<T>) {
   const theme = useAppTheme();
+  const isDark = useIsDark();
+  const selectedIndex = options.findIndex((o) => o.value === value);
+
   return (
-    <View style={[styles.seg, { backgroundColor: theme.divider }]} accessibilityRole="tablist">
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <Pressable
-            key={o.value}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: on }}
-            onPress={() => onChange(o.value)}
-            style={[styles.item, on && [styles.on, { backgroundColor: theme.surface }]]}
-          >
-            <Text style={[styles.text, { color: on ? theme.text : theme.textMuted }]}>{o.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
+    <SegmentedControl
+      values={options.map((o) => o.label)}
+      selectedIndex={selectedIndex}
+      onChange={(e) => {
+        const o = options[e.nativeEvent.selectedSegmentIndex];
+        if (o) onChange(o.value);
+      }}
+      appearance={isDark ? 'dark' : 'light'}
+      fontStyle={{ fontFamily: FontFamily.medium, fontSize: 14, color: theme.textMuted }}
+      activeFontStyle={{ fontFamily: FontFamily.semibold, fontSize: 14, color: theme.text }}
+      style={styles.seg}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  seg: { flexDirection: 'row', borderRadius: 13, padding: 3 },
-  item: {
-    flex: 1,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: BorderRadius.sm,
-  },
-  on: { ...Shadow.sm },
-  text: { ...Type.label },
+  // Algo mas alto que el nativo (32) para que se toque bien con el auto en marcha
+  seg: { height: 40 },
 });
