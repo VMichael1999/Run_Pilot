@@ -14,6 +14,6 @@ it('el catalogo renderiza todos los componentes sin romperse', () => {
   render(<CatalogoScreen />);
   expect(screen.getByText('Botones')).toBeTruthy();
   expect(screen.getByText('Cargando (skeleton)')).toBeTruthy();
-  expect(screen.getByText('Tipografía (General Sans)')).toBeTruthy();
+  expect(screen.getByText('Tipografía (letra del sistema)')).toBeTruthy();
   expect(screen.getByText('BKL-482')).toBeTruthy();
 });

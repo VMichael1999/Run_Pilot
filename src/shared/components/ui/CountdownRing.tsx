@@ -72,7 +72,7 @@ export function CountdownRing({ segundos, total }: Props) {
           animatedProps={animatedProps}
         />
       </Svg>
-      {/* Ancho fijo: General Sans no tiene cifras tabulares */}
+      {/* Ancho fijo: las cifras de la letra del sistema no son de ancho fijo */}
       <Text
         style={[styles.n, { color: urgente ? theme.danger : theme.text }]}
         maxFontSizeMultiplier={1.2}

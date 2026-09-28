@@ -285,7 +285,7 @@ export function ViajeScreen({ route, navigation }: Props) {
           </View>
           {tarjeta.cifra ? (
             <View style={styles.destT}>
-              {/* Ancho minimo: las cifras de General Sans no son tabulares */}
+              {/* Ancho minimo: las cifras de la letra del sistema no son de ancho fijo */}
               <Text style={[Type.figure, styles.destFig, { color: theme.text }]}>{tarjeta.cifra}</Text>
               {tarjeta.sub ? <Text style={[Type.caption, { color: theme.textMuted }]}>{tarjeta.sub}</Text> : null}
             </View>
