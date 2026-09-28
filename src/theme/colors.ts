@@ -94,8 +94,8 @@ export const ThemeColors = {
     onDanger:    Palette.ink,
     dangerSoft:  '#3A1916',
 
-    // Ruta: verde con borde negro de noche
-    route:      '#3DCB7E',
+    // Ruta de noche: el lima de la marca (mismo color del boton "Finalizar viaje"), con borde negro
+    route:      Palette.lime,
     routeCase:  Palette.black,
     chartBar:   '#3A444D',
     starFill:   Palette.lime,
