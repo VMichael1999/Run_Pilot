@@ -33,4 +33,16 @@ describe('useConductorStore · viaje', () => {
     expect(st.esperandoDesde).toBeNull();
     expect(st.historial).toHaveLength(antes + 1);
   });
+
+  it('ingresosDia suma la ganancia neta (tarifa menos comision), no la tarifa', () => {
+    useConductorStore.setState({ ingresosDia: 0 });
+    useConductorStore.getState().setSolicitudActual(mockSolicitudes[0]); // S/ 18.50 al 15 %
+    useConductorStore.getState().finalizarViaje();
+    expect(useConductorStore.getState().ingresosDia).toBe(15.72);
+  });
+
+  it('setVehiculo cambia el vehiculo activo', () => {
+    useConductorStore.getState().setVehiculo('veh-2');
+    expect(useConductorStore.getState().vehiculoId).toBe('veh-2');
+  });
 });

@@ -1,19 +1,21 @@
 import React from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
-import { MONTO_MAX_RECARGA, MONTO_MIN, metodosRecarga, mockBilletera } from '../data/mockIngresos';
+import { MONTO_MAX_RECARGA, MONTO_MIN, metodosRecarga } from '../data/mockIngresos';
 import { formatSoles } from '@shared/utils/format';
 import { OperacionSaldo } from './OperacionSaldo';
+import { useSaldoBilletera } from './saldo';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Recargar'>;
 
 /** Recargar saldo. Aun no hay pasarela: se muestra la solicitud como hecha. */
 export function RecargarScreen({ navigation }: Props) {
+  const saldo = useSaldoBilletera();
   return (
     <OperacionSaldo
       titulo="Recargar saldo"
       saldoLabel="Saldo actual"
-      saldo={mockBilletera.saldo}
+      saldo={saldo}
       montosRapidos={[
         { value: '20', label: 'S/ 20' },
         { value: '50', label: 'S/ 50' },

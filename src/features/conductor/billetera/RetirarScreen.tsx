@@ -1,15 +1,16 @@
 import React from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
-import { MONTO_MIN, destinosRetiro, mockBilletera } from '../data/mockIngresos';
+import { MONTO_MIN, destinosRetiro } from '../data/mockIngresos';
 import { formatSoles } from '@shared/utils/format';
 import { OperacionSaldo } from './OperacionSaldo';
+import { useSaldoBilletera } from './saldo';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Retirar'>;
 
 /** Retirar saldo a una cuenta, billetera digital o en efectivo en un agente. */
 export function RetirarScreen({ navigation }: Props) {
-  const saldo = mockBilletera.saldo;
+  const saldo = useSaldoBilletera();
   // S/ 20 marcado solo si alcanza el saldo; si no, no se sugiere ningun monto
   const montoInicial = saldo >= 20 ? '20' : '';
   return (

@@ -4,7 +4,8 @@
 |--------|----------------|--------|
 | Type (letra del sistema, pesos por rol) | src/theme/__tests__/fonts.test.ts | 3 tests, en verde |
 | ThemeColors (roles y contraste) | src/theme/__tests__/colors.test.ts | 27 tests, en verde |
-| useConductorStore (fases, espera, finalizar) | src/store/__tests__/useConductorStore.test.ts | 2 tests, en verde |
+| useConductorStore (fases, espera, finalizar, ganancia neta, vehículo) | src/store/__tests__/useConductorStore.test.ts | 4 tests, en verde |
+| Saldo de la billetera (viajes de la sesión) | src/features/conductor/billetera/__tests__/saldo.test.ts | 2 tests, en verde |
 | Viaje en curso en el inicio (textos por fase, franja, contador) | src/features/conductor/home/__tests__/viajeEnCurso.test.ts + ConductorHomeScreen.test.tsx | 7 + 3 tests, en verde |
 | useAuthStore | pendiente | sin tests (cubierto indirectamente por Login y Cuenta) |
 | useThemeStore | src/store/__tests__/useThemeStore.test.ts | 5 tests, en verde |

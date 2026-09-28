@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { EstadoViaje, Solicitud, ViajeCompletado } from '@features/conductor/types';
 import { mockHistorial } from '@features/conductor/data/mockHistorial';
+import { mockConductor } from '@features/conductor/data/mockConductor';
+import { desgloseCobro } from '@shared/utils/cobro';
 
 interface ConductorState {
   isOnline: boolean;
@@ -8,7 +10,11 @@ interface ConductorState {
   estadoViaje: EstadoViaje | null;
   /** Hora (ms) en que se llego al punto de recojo; cuenta la espera aunque se salga de la pantalla del viaje. */
   esperandoDesde: number | null;
+  /** Ganancia neta de los viajes de esta sesion (tarifa menos comision). */
   ingresosDia: number;
+  /** Vehiculo con el que sale el conductor. */
+  vehiculoId: string;
+  setVehiculo: (id: string) => void;
   historial: ViajeCompletado[];
   setOnline: (online: boolean) => void;
   setSolicitudActual: (solicitud: Solicitud | null) => void;
@@ -33,9 +39,12 @@ export const useConductorStore = create<ConductorState>((set, get) => ({
   estadoViaje:    null,
   esperandoDesde: null,
   ingresosDia:    0,
+  vehiculoId:     mockConductor.vehiculos[0].id,
   historial:      [...mockHistorial],
 
   setOnline: (online) => set({ isOnline: online }),
+
+  setVehiculo: (id) => set({ vehiculoId: id }),
 
   setSolicitudActual: (solicitud) =>
     set({ solicitudActual: solicitud, estadoViaje: solicitud ? 'aceptado' : null, esperandoDesde: null }),
@@ -68,7 +77,8 @@ export const useConductorStore = create<ConductorState>((set, get) => ({
     set((state) => ({
       estadoViaje:  null,
       esperandoDesde: null,
-      ingresosDia:  state.ingresosDia + solicitud.precio,
+      // Lo que gana el conductor, no lo que paga el pasajero
+      ingresosDia:  state.ingresosDia + desgloseCobro(solicitud.precio, mockConductor.comision).ganancia,
       historial:    [nuevoViaje, ...state.historial],
       // solicitudActual se mantiene para CalificarScreen
     }));
