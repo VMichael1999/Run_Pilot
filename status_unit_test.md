@@ -19,8 +19,8 @@
 | ViajeScreen (fases deslizables, panel del pasajero, SOS, llamar, fuga de GPS, cancelar viaje) | src/features/conductor/viaje/__tests__/ViajeScreen.test.tsx | 18 tests, en verde |
 | format (soles, viajes, tiempo) | src/shared/utils/__tests__/format.test.ts | 9 tests, en verde |
 | CalificarScreen (estrellas, etiquetas, enviar, omitir, desde historial) | src/features/conductor/calificar/__tests__/CalificarScreen.test.tsx | 5 tests, en verde |
-| HistorialViaje + HistorialDetalle | src/features/conductor/historial/__tests__/HistorialViajeScreen.test.tsx | 5 tests, en verde |
-| agrupar historial por día | src/features/conductor/historial/__tests__/agrupar.test.ts | 1 test, en verde |
+| HistorialViaje (tarjetas, cancelados, parada extra, menú) + HistorialDetalle | src/features/conductor/historial/__tests__/HistorialViajeScreen.test.tsx | 9 tests, en verde |
+| agrupar historial por día (con cancelados) y separar paradas | src/features/conductor/historial/__tests__/agrupar.test.ts | 3 tests, en verde |
 | LoginScreen + LoginVerificacionScreen | src/features/auth/__tests__/Login.test.tsx | 4 tests, en verde |
 | Solicitudes + SolicitudDetalle + ServiciosProgramados | src/features/conductor/solicitudes/__tests__/SolicitudesScreen.test.tsx | 3 tests, en verde |
 | IngresosScreen + BilleteraScreen | src/features/conductor/ingresos/__tests__/IngresosScreen.test.tsx | 5 tests, en verde |

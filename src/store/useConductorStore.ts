@@ -14,7 +14,7 @@ export interface Cancelacion {
   motivo: MotivoCancelacion;
   fechaMs: number;
 }
-import { mockHistorial } from '@features/conductor/data/mockHistorial';
+import { mockCancelaciones, mockHistorial } from '@features/conductor/data/mockHistorial';
 import { mockConductor } from '@features/conductor/data/mockConductor';
 import { desgloseCobro } from '@shared/utils/cobro';
 
@@ -58,7 +58,7 @@ export const useConductorStore = create<ConductorState>((set, get) => ({
   ingresosDia:    0,
   vehiculoId:     mockConductor.vehiculos[0].id,
   historial:      [...mockHistorial],
-  cancelaciones:  [],
+  cancelaciones:  [...mockCancelaciones],
 
   setOnline: (online) => set({ isOnline: online }),
 

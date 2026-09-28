@@ -7,6 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import { useConductorStore } from '@store/useConductorStore';
 import { fetchRoute, type LatLng } from '@features/conductor/viaje/services/directionsService';
+import { separarParadas } from './agrupar';
 import { AppButton, AppHeader, AvatarPasajero, RouteStops } from '@shared/components/ui';
 import { DestinationMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
 import { RoutePolyline } from '@shared/components/map/RoutePolyline';
@@ -41,8 +42,7 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
   const mapRef = useRef<MapView>(null);
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
 
-  const origen  = viaje?.solicitud.paradas.find((p) => p.esOrigen);
-  const destino = viaje?.solicitud.paradas.find((p) => !p.esOrigen);
+  const { origen, intermedias, destino } = separarParadas(viaje?.solicitud.paradas ?? []);
 
   useEffect(() => {
     if (!origen || !destino) return;
@@ -122,7 +122,9 @@ export function HistorialDetalleScreen({ route, navigation }: Props) {
 
         <RouteStops
           origen={{ direccion: origen.direccion, detalle: origen.notas }}
+          intermedias={intermedias.map((p) => ({ direccion: p.direccion, detalle: p.notas }))}
           destino={{ direccion: destino.direccion }}
+          conEtiquetas={intermedias.length > 0}
         />
 
         <View style={[styles.pax, { borderColor: theme.divider }]}>

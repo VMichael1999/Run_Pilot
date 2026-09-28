@@ -1,139 +1,105 @@
-import React, { useMemo } from 'react';
-import { Pressable, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import type { ViajeCompletado } from '@features/conductor/types';
 import { useConductorStore } from '@store/useConductorStore';
 import { AppButton, AppHeader } from '@shared/components/ui';
-import { distritoDe, esEfectivo } from '@shared/utils/cobro';
-import { hora } from '@shared/utils/fecha';
 import { formatSoles, pluralViajes } from '@shared/utils/format';
+import { hora } from '@shared/utils/fecha';
 import { useAppTheme } from '@theme/useAppTheme';
-import { Weight, Type } from '@theme/fonts';
-import { BorderRadius, Hit, Spacing } from '@theme/spacing';
+import { Type } from '@theme/fonts';
+import { Spacing } from '@theme/spacing';
 import { mockConductor } from '../data/mockConductor';
 import { agruparPorDia } from './agrupar';
+import { TarjetaHistorial } from './components/TarjetaHistorial';
+import { AccionesViajeSheet, type AccionViaje } from './components/AccionesViajeSheet';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'HistorialViaje'>;
 
-function ViajeFila({
-  viaje,
-  onAbrir,
-  onCalificar,
-}: {
-  viaje: ViajeCompletado;
-  onAbrir: () => void;
-  onCalificar: () => void;
-}) {
-  const theme = useAppTheme();
-  const { solicitud, fechaMs, calificacion } = viaje;
-  const { pasajero, paradas, precio, metodoPago } = solicitud;
-  const o = paradas.find((p) => p.esOrigen);
-  const d = paradas.find((p) => !p.esOrigen);
-  const ruta = o && d ? `${distritoDe(o.direccion)} → ${distritoDe(d.direccion)}` : 'Viaje';
-  const pago = esEfectivo(metodoPago) ? 'efectivo' : 'digital';
-  const pendiente = calificacion === 0;
-
-  return (
-    <View style={[styles.hv, { borderBottomColor: theme.divider }]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${hora(fechaMs)}, ${ruta}, ${pasajero.nombre}, ${pago}, ${formatSoles(precio)}. ${
-          pendiente ? 'Sin calificar' : `Le diste ${calificacion}`
-        }. Ver detalle`}
-        onPress={onAbrir}
-        style={({ pressed }) => [styles.hvMain, pressed && { opacity: 0.6 }]}
-      >
-        <Text style={[styles.t, { color: theme.text }]}>{hora(fechaMs)}</Text>
-        <View style={styles.flex}>
-          <Text style={[styles.ruta, { color: theme.text }]}>{ruta}</Text>
-          <Text style={[Type.caption, { color: theme.textMuted }]}>
-            {pasajero.nombre} {pasajero.apellido.charAt(0)}. · {pago}
-          </Text>
-        </View>
-        <Text style={[styles.m, { color: theme.text }]}>{formatSoles(precio)}</Text>
-      </Pressable>
-
-      <View style={styles.row2}>
-        {pendiente ? (
-          <View style={[styles.mini, { backgroundColor: theme.signal }]}>
-            <Text style={[Type.tag, { color: theme.onSignal }]}>Sin calificar</Text>
-          </View>
-        ) : (
-          <View style={[styles.mini, styles.miniRow, { backgroundColor: theme.background }]}>
-            <Ionicons name="star" size={11} color={theme.textMuted} />
-            <Text style={[Type.tag, { color: theme.textMuted }]}>Le diste {calificacion}</Text>
-          </View>
-        )}
-        {pendiente && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={`Calificar a ${pasajero.nombre}`}
-            onPress={onCalificar}
-            style={styles.calificar}
-          >
-            <Text style={[styles.link, { color: theme.text }]}>Calificar</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
+const pluralCancelados = (n: number) => (n === 1 ? '1 cancelado' : `${n} cancelados`);
 
 export function HistorialViajeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
   const historial = useConductorStore((s) => s.historial);
+  const cancelaciones = useConductorStore((s) => s.cancelaciones);
   const setSolicitudActual = useConductorStore((s) => s.setSolicitudActual);
   const estadoViaje = useConductorStore((s) => s.estadoViaje);
+  const [menuDe, setMenuDe] = useState<ViajeCompletado | null>(null);
 
-  const secciones = useMemo(() => agruparPorDia(historial, mockConductor.comision), [historial]);
+  const secciones = useMemo(
+    () => agruparPorDia(historial, mockConductor.comision, Date.now(), cancelaciones),
+    [historial, cancelaciones],
+  );
 
+  const abrir = (v: ViajeCompletado) => navigation.navigate('HistorialDetalle', { viajeId: v.id });
   const calificar = (v: ViajeCompletado) => {
     // Calificar lee el viaje del historial; no se toca un viaje en curso
     if (!estadoViaje) setSolicitudActual(null);
     navigation.navigate('Calificar', { solicitudId: v.id });
   };
 
+  const acciones: AccionViaje[] = menuDe
+    ? [
+        { etiqueta: 'Ver detalle', icono: 'receipt-outline', onPress: () => abrir(menuDe) },
+        menuDe.calificacion === 0
+          ? { etiqueta: `Calificar a ${menuDe.solicitud.pasajero.nombre}`, icono: 'star-outline', onPress: () => calificar(menuDe) }
+          : { etiqueta: 'Cambiar calificación', icono: 'star-half-outline', onPress: () => calificar(menuDe) },
+      ]
+    : [];
+
   return (
     <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <AppHeader title="Historial" />
       <SectionList
         sections={secciones}
-        keyExtractor={(v) => v.id}
+        keyExtractor={(e) => e.id}
         stickySectionHeadersEnabled={false}
         contentContainerStyle={[styles.pad, { paddingBottom: insets.bottom + Spacing['2xl'] }]}
-        renderSectionHeader={({ section }) => (
-          <View
-            style={styles.secH}
-            accessibilityRole="header"
-            accessible
-            accessibilityLabel={`${section.titulo}, ${pluralViajes(section.viajes)}, ${formatSoles(section.ganado)} ganados`}
-          >
-            <Text style={[styles.secT, { color: theme.textMuted }]}>
-              <Text style={[Type.sectionTitle, { color: theme.text }]}>{section.titulo}</Text> · {pluralViajes(section.viajes)}
-            </Text>
-            <Text style={[styles.secT, { color: theme.textMuted }]}>{formatSoles(section.ganado)} ganados</Text>
-          </View>
-        )}
+        renderSectionHeader={({ section }) => {
+          const conteo = [pluralViajes(section.viajes), section.cancelados > 0 && pluralCancelados(section.cancelados)]
+            .filter(Boolean)
+            .join(' · ');
+          return (
+            <View
+              style={styles.secH}
+              accessibilityRole="header"
+              accessible
+              accessibilityLabel={`${section.titulo}, ${conteo}, ${formatSoles(section.ganado)} ganados`}
+            >
+              <Text style={[styles.secT, styles.flex, { color: theme.textMuted }]}>
+                <Text style={[Type.sectionTitle, { color: theme.text }]}>{section.titulo}</Text> · {conteo}
+              </Text>
+              <Text style={[styles.secT, { color: theme.textMuted }]}>{formatSoles(section.ganado)} ganados</Text>
+            </View>
+          );
+        }}
+        ItemSeparatorComponent={() => <View style={styles.gap} />}
         renderItem={({ item }) => (
-          <ViajeFila
-            viaje={item}
-            onAbrir={() => navigation.navigate('HistorialDetalle', { viajeId: item.id })}
-            onCalificar={() => calificar(item)}
+          <TarjetaHistorial
+            entrada={item}
+            comision={mockConductor.comision}
+            onAbrir={() => item.tipo === 'completado' && abrir(item.viaje)}
+            onMenu={() => item.tipo === 'completado' && setMenuDe(item.viaje)}
           />
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={[Type.heading, { color: theme.text }]}>Todavía no tienes viajes</Text>
             <Text style={[Type.detail, { color: theme.textMuted }]}>
-              Aquí verás cada viaje que termines, agrupado por día.
+              Aquí verás cada viaje que termines o canceles, agrupado por día.
             </Text>
             <AppButton label="Ir al inicio" variant="ghost" size="md" onPress={() => navigation.goBack()} />
           </View>
         }
+      />
+      <AccionesViajeSheet
+        visible={menuDe !== null}
+        titulo={menuDe ? `${hora(menuDe.fechaMs)} · ${menuDe.solicitud.pasajero.nombre} ${menuDe.solicitud.pasajero.apellido}` : ''}
+        acciones={acciones}
+        onCerrar={() => setMenuDe(null)}
       />
     </View>
   );
@@ -141,30 +107,16 @@ export function HistorialViajeScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  pad: { paddingHorizontal: 18 },
+  pad: { paddingHorizontal: Spacing.lg },
   secH: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
     gap: Spacing.sm,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xs,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.md,
   },
   secT: { ...Type.section },
-  hv: { paddingVertical: Spacing.md, borderBottomWidth: 1, gap: Spacing.xs },
-  hvMain: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm + 2, minHeight: 40 },
-  t: { width: 44, ...Type.smallStrong },
-  ruta: { ...Type.label },
-  m: { ...Type.amount, textAlign: 'right' },
-  row2: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginLeft: 44 + Spacing.sm + 2,
-  },
-  mini: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: BorderRadius.full },
-  miniRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  calificar: { minHeight: Hit.min, minWidth: Hit.min, justifyContent: 'center', alignItems: 'flex-end' },
-  link: { ...Type.detail, fontWeight: Weight.semibold, textDecorationLine: 'underline' },
+  gap: { height: Spacing.md },
   empty: { gap: Spacing.sm, paddingTop: Spacing.xl },
 });
