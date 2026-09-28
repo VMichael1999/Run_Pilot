@@ -4,7 +4,7 @@
 |--------|----------------|--------|
 | ThemeColors (roles y contraste) | src/theme/__tests__/colors.test.ts | 25 tests, en verde |
 | useAuthStore | pendiente | sin tests |
-| useThemeStore | pendiente | sin tests |
+| useThemeStore | src/store/__tests__/useThemeStore.test.ts | 5 tests, en verde |
 | LoginScreen | pendiente | sin tests |
 | LoginVerificacionScreen | pendiente | sin tests |
 | SolicitudesScreen | pendiente | sin tests |

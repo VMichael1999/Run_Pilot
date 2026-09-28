@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import { AppHeader } from '@shared/components/ui/AppHeader';
 import { useThemeStore } from '@store/useThemeStore';
+import { useIsDark } from '@theme/useAppTheme';
 import { Colors } from '@theme/colors';
 import { FontFamily, FontSize } from '@theme/fonts';
 import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
@@ -11,8 +12,8 @@ import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Configuracion'>;
 
 export function ConfiguracionScreen({ navigation }: Props) {
-  const isDark = useThemeStore((s) => s.isDark);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const isDark = useIsDark();
+  const setPreference = useThemeStore((s) => s.setPreference);
 
   return (
     <View style={styles.container}>
@@ -26,7 +27,7 @@ export function ConfiguracionScreen({ navigation }: Props) {
             <Text style={styles.filaLabel}>Modo oscuro</Text>
             <Switch
               value={isDark}
-              onValueChange={toggleTheme}
+              onValueChange={(dark) => setPreference(dark ? 'dark' : 'light')}
               trackColor={{ false: Colors.divider, true: Colors.primary }}
               thumbColor={Colors.white}
             />

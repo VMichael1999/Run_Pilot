@@ -6,7 +6,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { FontAssets, useAppTheme } from './src/theme';
+import { FontAssets, useAppTheme, useIsDark } from './src/theme';
 import { useThemeStore } from './src/store/useThemeStore';
 
 // El splash nativo (logo sobre negro) queda visible hasta tener fuentes y tema.
@@ -14,7 +14,7 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const theme = useAppTheme();
-  const isDark = useThemeStore((state) => state.isDark);
+  const isDark = useIsDark();
   const hasHydrated = useThemeStore((state) => state.hasHydrated);
   const loadTheme = useThemeStore((state) => state.loadTheme);
 
