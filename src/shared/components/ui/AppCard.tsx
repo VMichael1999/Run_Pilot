@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { BorderRadius, Shadow, Spacing } from '@theme/spacing';
+import { BorderRadius, Spacing } from '@theme/spacing';
 
 interface AppCardProps {
   children: React.ReactNode;
@@ -10,11 +10,19 @@ interface AppCardProps {
   padded?: boolean;
 }
 
+/** Superficie con borde fino. Sin sombra: la sombra se reserva para lo que flota sobre el mapa. */
 export function AppCard({ children, style, contentStyle, padded = true }: AppCardProps) {
   const theme = useAppTheme();
 
   return (
-    <View style={[styles.card, padded && styles.padded, { backgroundColor: theme.surface }, style]}>
+    <View
+      style={[
+        styles.card,
+        padded && styles.padded,
+        { backgroundColor: theme.surface, borderColor: theme.divider },
+        style,
+      ]}
+    >
       <View style={contentStyle}>{children}</View>
     </View>
   );
@@ -23,7 +31,7 @@ export function AppCard({ children, style, contentStyle, padded = true }: AppCar
 const styles = StyleSheet.create({
   card: {
     borderRadius: BorderRadius.lg,
-    ...Shadow.sm,
+    borderWidth: 1,
   },
   padded: {
     padding: Spacing.lg,

@@ -1,16 +1,33 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import { Colors } from '@theme/colors';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 import { useAppTheme } from '@theme/useAppTheme';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { BorderRadius, Spacing } from '@theme/spacing';
+import { Type } from '@theme/fonts';
+import { BorderRadius, Hit, Spacing } from '@theme/spacing';
+
+type Variant = 'primary' | 'signal' | 'ghost';
+type Size = 'lg' | 'md';
 
 interface AppButtonProps {
   label: string;
   onPress?: () => void;
   disabled?: boolean;
   loading?: boolean;
-  variant?: 'primary' | 'ghost';
+  /** primary: tinta de dia / lima de noche. signal: lima siempre. ghost: borde. */
+  variant?: Variant;
+  /** lg: 56 dp (acciones principales). md: 48 dp. */
+  size?: Size;
+  icon?: React.ReactNode;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   style?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
 }
@@ -21,30 +38,53 @@ export function AppButton({
   disabled = false,
   loading = false,
   variant = 'primary',
+  size = 'lg',
+  icon,
+  accessibilityLabel,
+  accessibilityHint,
   style,
   labelStyle,
 }: AppButtonProps) {
   const theme = useAppTheme();
-  const isPrimary = variant === 'primary';
+  const inactive = disabled || loading;
+
+  const bg =
+    variant === 'primary' ? theme.primary :
+    variant === 'signal'  ? theme.signal  : 'transparent';
+  const fg =
+    variant === 'primary' ? theme.onPrimary :
+    variant === 'signal'  ? theme.onSignal  : theme.text;
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: inactive, busy: loading }}
       style={[
         styles.button,
-        { backgroundColor: isPrimary ? theme.accent : 'transparent' },
-        (disabled || loading) && styles.disabled,
+        size === 'lg' ? styles.lg : styles.md,
+        { backgroundColor: bg },
+        variant === 'ghost' && { borderWidth: 1.5, borderColor: theme.divider },
+        inactive && styles.disabled,
         style,
       ]}
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={inactive}
       activeOpacity={0.85}
     >
       {loading ? (
-        <ActivityIndicator color={Colors.white} />
+        <ActivityIndicator color={fg} />
       ) : (
-        <Text style={[styles.label, { color: isPrimary ? Colors.white : theme.textMuted }, labelStyle]}>
-          {label}
-        </Text>
+        <View style={styles.content}>
+          {icon}
+          <Text
+            style={[size === 'lg' ? Type.action : Type.bodyStrong, { color: fg }, labelStyle]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -52,17 +92,24 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+  lg: {
+    minHeight: Hit.action,
+    borderRadius: BorderRadius.lg,
+  },
+  md: {
+    minHeight: Hit.min,
+    borderRadius: BorderRadius.md,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   disabled: {
-    opacity: 0.55,
-  },
-  label: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
+    opacity: 0.4,
   },
 });
