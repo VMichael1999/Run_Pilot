@@ -18,3 +18,4 @@ export { Tag } from './Tag';
 export { SosButton, SOS_TELEFONO } from './SosButton';
 export { Chip } from './Chip';
 export { StarRating } from './StarRating';
+export { Segmented } from './Segmented';

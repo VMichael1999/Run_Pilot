@@ -16,7 +16,9 @@
 | LoginScreen | pendiente | sin tests |
 | LoginVerificacionScreen | pendiente | sin tests |
 | SolicitudesScreen | pendiente | sin tests |
-| IngresosScreen | pendiente | sin tests |
+| IngresosScreen + BilleteraScreen | src/features/conductor/ingresos/__tests__/IngresosScreen.test.tsx | 5 tests, en verde |
+| resumen de ingresos (hoy, semana, mes) | src/features/conductor/ingresos/__tests__/resumen.test.ts | 4 tests, en verde |
+| fecha (hoy/ayer, semana, mes) | src/shared/utils/__tests__/fecha.test.ts | 4 tests, en verde |
 | ExperienciaScreen | pendiente | sin tests |
 | CuentaScreen | pendiente | sin tests |
 
