@@ -21,7 +21,7 @@
 | resumen de ingresos (hoy, semana, mes) | src/features/conductor/ingresos/__tests__/resumen.test.ts | 4 tests, en verde |
 | fecha (hoy/ayer, semana, mes, título de día) | src/shared/utils/__tests__/fecha.test.ts | 5 tests, en verde |
 | Cuenta, Configuración, Vehículo, Experiencia, menú lateral | src/features/conductor/cuenta/__tests__/CuentaYMenu.test.tsx | 7 tests, en verde |
-| Recargar + Retirar (montos, validación, opciones, resultado) | src/features/conductor/billetera/__tests__/RecargarRetirar.test.tsx | 8 tests, en verde |
+| Recargar + Retirar (monto por defecto, logos, validación, opciones, resultado) | src/features/conductor/billetera/__tests__/RecargarRetirar.test.tsx | 12 tests, en verde |
 | Catálogo de componentes (solo desarrollo) | src/features/dev/__tests__/CatalogoScreen.test.tsx | 1 test (render), en verde |
 
 > Actualizar este archivo cada vez que se agregen o completen tests.

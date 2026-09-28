@@ -23,3 +23,4 @@ export { Skeleton } from './Skeleton';
 export { Price } from './Price';
 export { AmountField, limpiarMonto } from './AmountField';
 export { OptionRow } from './OptionRow';
+export { LogosPago } from './logosPago';

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { RecargarScreen } from '../RecargarScreen';
 import { RetirarScreen } from '../RetirarScreen';
 import { limpiarMonto } from '@shared/components/ui';
+import { mockBilletera } from '../../data/mockIngresos';
 
 jest.mock('@react-navigation/native', () => ({ useNavigation: () => ({ goBack: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({
@@ -25,6 +26,18 @@ describe('limpiarMonto', () => {
 });
 
 describe('RecargarScreen', () => {
+  it('abre con S/ 20 marcado y el campo en 20', () => {
+    render(<RecargarScreen navigation={nav() as never} route={{} as never} />);
+    expect(screen.getByRole('tab', { name: 'S/ 20' }).props.accessibilityState).toMatchObject({ selected: true });
+    expect(screen.getByDisplayValue('20')).toBeTruthy();
+  });
+
+  it('muestra los logos de Yape, Plin y efectivo', () => {
+    const { UNSAFE_getAllByType } = render(<RecargarScreen navigation={nav() as never} route={{} as never} />);
+    const { Image } = require('react-native');
+    expect(UNSAFE_getAllByType(Image)).toHaveLength(3);
+  });
+
   it('monto rapido + metodo habilita el boton que repite ambos; confirmar muestra el resultado', () => {
     const navigation = nav();
     render(<RecargarScreen navigation={navigation as never} route={{} as never} />);
@@ -52,6 +65,21 @@ describe('RecargarScreen', () => {
 });
 
 describe('RetirarScreen', () => {
+  it('con saldo abre con S/ 20 marcado', () => {
+    render(<RetirarScreen navigation={nav() as never} route={{} as never} />);
+    expect(screen.getByRole('tab', { name: 'S/ 20' }).props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it('con menos de S/ 20 no marca ningun monto', () => {
+    const antes = mockBilletera.saldo;
+    mockBilletera.saldo = 15;
+    render(<RetirarScreen navigation={nav() as never} route={{} as never} />);
+    for (const t of screen.getAllByRole('tab')) {
+      expect(t.props.accessibilityState).toMatchObject({ selected: false });
+    }
+    mockBilletera.saldo = antes;
+  });
+
   it('no deja retirar mas que el saldo; "Todo" usa el saldo completo; agente da un codigo', () => {
     render(<RetirarScreen navigation={nav() as never} route={{} as never} />);
     fireEvent.changeText(screen.getByLabelText('Monto en soles'), '100');

@@ -33,18 +33,18 @@ export const mockBilletera = {
 
 /** Metodos para recargar saldo (ejemplo; aun no hay pasarela de pago). */
 export const metodosRecarga = [
-  { id: 'yape', corto: 'con Yape', nombre: 'Yape', detalle: 'Al instante desde tu app de Yape', icono: 'phone-portrait-outline' },
-  { id: 'plin', corto: 'con Plin', nombre: 'Plin', detalle: 'Al instante desde tu banco', icono: 'phone-portrait-outline' },
+  { id: 'yape', logo: 'yape', corto: 'con Yape', nombre: 'Yape', detalle: 'Al instante desde tu app de Yape', icono: 'phone-portrait-outline' },
+  { id: 'plin', logo: 'plin', corto: 'con Plin', nombre: 'Plin', detalle: 'Al instante desde tu banco', icono: 'phone-portrait-outline' },
   { id: 'tarjeta', corto: 'con tarjeta', nombre: 'Tarjeta de débito o crédito', detalle: 'Visa o Mastercard', icono: 'card-outline' },
-  { id: 'agente', corto: 'en agente', nombre: 'Agente o depósito', detalle: 'Pagas en un agente con un código; se acredita en unas horas', icono: 'storefront-outline' },
+  { id: 'agente', logo: 'efectivo', corto: 'en efectivo', nombre: 'Efectivo en agente o depósito', detalle: 'Pagas en un agente con un código; se acredita en unas horas', icono: 'storefront-outline' },
 ] as const;
 
 /** Destinos para retirar saldo (ejemplo). */
 export const destinosRetiro = [
   { id: 'cuenta', corto: 'a tu cuenta bancaria', nombre: 'Cuenta bancaria ···4471', detalle: 'Llega en 1 día hábil', icono: 'business-outline' },
-  { id: 'yape', corto: 'a Yape', nombre: 'Yape · 987 654 321', detalle: 'Al instante', icono: 'phone-portrait-outline' },
-  { id: 'plin', corto: 'a Plin', nombre: 'Plin · 987 654 321', detalle: 'Al instante', icono: 'phone-portrait-outline' },
-  { id: 'agente', corto: 'en efectivo en agente', nombre: 'Efectivo en agente', detalle: 'Retiras con un código en agentes BCP o Kasnet; válido 24 h', icono: 'storefront-outline' },
+  { id: 'yape', logo: 'yape', corto: 'a Yape', nombre: 'Yape · 987 654 321', detalle: 'Al instante', icono: 'phone-portrait-outline' },
+  { id: 'plin', logo: 'plin', corto: 'a Plin', nombre: 'Plin · 987 654 321', detalle: 'Al instante', icono: 'phone-portrait-outline' },
+  { id: 'agente', logo: 'efectivo', corto: 'en efectivo en agente', nombre: 'Efectivo en agente', detalle: 'Retiras con un código en agentes BCP o Kasnet; válido 24 h', icono: 'storefront-outline' },
 ] as const;
 
 export const MONTO_MIN = 10;
