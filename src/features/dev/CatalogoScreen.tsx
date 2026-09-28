@@ -114,7 +114,7 @@ export function CatalogoScreen() {
           <Skeleton height={56} radius={BorderRadius.lg} />
         </View>
 
-        <AppSectionTitle>Tipografía (General Sans)</AppSectionTitle>
+        <AppSectionTitle>Tipografía (letra del sistema)</AppSectionTitle>
         {roles.map((r) => (
           <View key={r} style={[styles.typeRow, { borderBottomColor: theme.divider }]}>
             <Text style={[Type[r], { color: theme.text }]} numberOfLines={1}>
