@@ -9,6 +9,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import type { EstadoViaje } from '../types';
 import { useConductorStore } from '@store/useConductorStore';
+import { cronometro, useSegundosDesde } from '@shared/hooks/useSegundosDesde';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { PanelPago } from './components/PanelPago';
 import { fetchRoute, type LatLng } from './services/directionsService';
@@ -60,7 +61,6 @@ const hora = (ms: number) => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
-const cronometro = (seg: number) => `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
 
 export function ViajeScreen({ route, navigation }: Props) {
   const { solicitudId } = route.params;
@@ -145,14 +145,10 @@ export function ViajeScreen({ route, navigation }: Props) {
     });
   }, [driverCoord, objetivo?.latitude, objetivo?.longitude, panelH, topH]);
 
-  // Tiempo esperando al pasajero
-  const [esperandoSeg, setEsperandoSeg] = useState(0);
-  useEffect(() => {
-    if (fase !== 'esperando') return;
-    setEsperandoSeg(0);
-    const iv = setInterval(() => setEsperandoSeg((s) => s + 1), 1000);
-    return () => clearInterval(iv);
-  }, [fase]);
+  // Tiempo esperando al pasajero: se cuenta desde que se llego (store), asi no
+  // vuelve a 0:00 si el conductor sale al inicio y regresa
+  const esperandoDesde = useConductorStore((s) => s.esperandoDesde);
+  const esperandoSeg = useSegundosDesde(fase === 'esperando' ? esperandoDesde : null);
 
   // Progreso del viaje sobre la ruta
   const totalKm = useMemo(() => distanciaRutaKm(routeCoords), [routeCoords]);

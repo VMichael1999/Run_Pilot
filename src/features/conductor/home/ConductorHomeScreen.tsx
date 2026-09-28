@@ -14,6 +14,7 @@ import { useAuthStore } from '@store/useAuthStore';
 import { DrawerMenu } from './DrawerMenu';
 import type { DrawerMenuItem } from './DrawerMenu';
 import { IncomingRequestOverlay } from './components/IncomingRequestOverlay';
+import { ViajeEnCursoBanner } from './components/ViajeEnCursoBanner';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { mockConductor } from '../data/mockConductor';
 import { mockBilletera } from '../data/mockIngresos';
@@ -74,6 +75,13 @@ export function ConductorHomeScreen() {
   const historial         = useConductorStore((s) => s.historial);
   const setOnline         = useConductorStore((s) => s.setOnline);
   const setSolicitudActual = useConductorStore((s) => s.setSolicitudActual);
+  const solicitudActual   = useConductorStore((s) => s.solicitudActual);
+  const estadoViaje       = useConductorStore((s) => s.estadoViaje);
+  const esperandoDesde    = useConductorStore((s) => s.esperandoDesde);
+  // Viaje aceptado que aun no termina de cobrarse
+  const viajeActivo = solicitudActual && estadoViaje && estadoViaje !== 'finalizado'
+    ? { solicitud: solicitudActual, estado: estadoViaje }
+    : null;
   const logout      = useAuthStore((s) => s.logout);
 
   const [toggling,        setToggling]        = useState(false);
@@ -99,9 +107,11 @@ export function ConductorHomeScreen() {
     })();
   }, []);
 
-  // Simulacion de solicitudes entrantes (solo cuando online)
+  // Simulacion de solicitudes entrantes: solo conectado y sin viaje en curso.
+  // Al terminar un viaje se reanuda (antes no llegaban mas despues del primero).
+  const hayViaje = viajeActivo !== null;
   useEffect(() => {
-    if (!isOnline) {
+    if (!isOnline || hayViaje) {
       if (simTimer.current) clearTimeout(simTimer.current);
       setSolicitudActiva(null);
       return;
@@ -112,7 +122,7 @@ export function ConductorHomeScreen() {
     };
     simTimer.current = setTimeout(mostrarSiguiente, 3000);
     return () => { if (simTimer.current) clearTimeout(simTimer.current); };
-  }, [isOnline]);
+  }, [isOnline, hayViaje]);
 
   const handleRechazarIncoming = () => {
     setSolicitudActiva(null);
@@ -249,7 +259,29 @@ export function ConductorHomeScreen() {
         ]}
         onLayout={(e) => setPanelH(e.nativeEvent.layout.height)}
       >
-        {isOnline ? (
+        {/* Viaje en curso: el panel crece hacia arriba con esta franja */}
+        {viajeActivo && (
+          <ViajeEnCursoBanner
+            solicitud={viajeActivo.solicitud}
+            estado={viajeActivo.estado}
+            esperandoDesde={esperandoDesde}
+            onContinuar={() => navigation.navigate('Viaje', { solicitudId: viajeActivo.solicitud.id })}
+          />
+        )}
+
+        {viajeActivo ? (
+          <Animated.View
+            key="en-curso"
+            entering={FadeIn.duration(Duration.base)}
+            exiting={FadeOut.duration(Duration.fast)}
+            style={[styles.panelBody, styles.panelBodyTop]}
+          >
+            <Text style={[Type.panelTitle, { color: theme.text }]}>Tienes un viaje en curso</Text>
+            <Text style={[Type.detail, { color: theme.textMuted }]}>
+              No recibirás nuevas solicitudes hasta terminarlo.
+            </Text>
+          </Animated.View>
+        ) : isOnline ? (
           <Animated.View
             key="online"
             entering={FadeIn.duration(Duration.base)}
@@ -311,7 +343,7 @@ export function ConductorHomeScreen() {
       </View>
 
       {/* Solicitud entrante — overlay pantalla completa */}
-      {isOnline && solicitudActiva && (
+      {isOnline && !viajeActivo && solicitudActiva && (
         <IncomingRequestOverlay
           solicitud={solicitudActiva}
           onAceptar={() => handleAceptarIncoming(solicitudActiva)}
@@ -393,6 +425,7 @@ const styles = StyleSheet.create({
     ...Shadow.sheet,
   },
   panelBody: { gap: 14 },
+  panelBodyTop: { gap: Spacing.xs, paddingTop: 14 },
   hRow: {
     flexDirection: 'row',
     alignItems: 'center',
