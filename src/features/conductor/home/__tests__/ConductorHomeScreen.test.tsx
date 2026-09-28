@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { ConductorHomeScreen } from '../ConductorHomeScreen';
 import { useConductorStore } from '@store/useConductorStore';
+import { mockSolicitudes } from '../../data/mockSolicitudes';
 
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
@@ -30,7 +31,7 @@ jest.mock('../components/IncomingRequestOverlay', () => ({ IncomingRequestOverla
 beforeEach(() => {
   jest.useFakeTimers();
   mockNavigate.mockClear();
-  useConductorStore.setState({ isOnline: false, historial: [] });
+  useConductorStore.setState({ isOnline: false, historial: [], solicitudActual: null, estadoViaje: null, esperandoDesde: null });
 });
 afterEach(() => jest.useRealTimers());
 
@@ -67,5 +68,47 @@ describe('ConductorHomeScreen', () => {
     await act(async () => {});
     fireEvent.press(screen.getByLabelText(/Cambiar vehículo/));
     expect(mockNavigate).toHaveBeenCalledWith('SeleccionarVehiculo');
+  });
+});
+
+describe('ConductorHomeScreen · viaje en curso', () => {
+  it('con un viaje activo el panel muestra la franja y lleva de vuelta al viaje', async () => {
+    useConductorStore.setState({ isOnline: true, solicitudActual: mockSolicitudes[0], estadoViaje: 'en_camino' });
+    render(<ConductorHomeScreen />);
+    await act(async () => {});
+    expect(screen.getByText('Viaje en curso')).toBeTruthy();
+    expect(screen.getByText('Recoge a Carlos · 4 min')).toBeTruthy();
+    expect(screen.getByText('Tienes un viaje en curso')).toBeTruthy();
+    expect(screen.queryByText('Buscando viajes cerca de ti')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Desconectarme' })).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: /^Viaje en curso\./ }));
+    expect(mockNavigate).toHaveBeenCalledWith('Viaje', { solicitudId: 'sol-001' });
+  });
+
+  it('la franja cambia con la fase y el contador de espera sigue corriendo', async () => {
+    useConductorStore.setState({
+      isOnline: true,
+      solicitudActual: mockSolicitudes[0],
+      estadoViaje: 'esperando',
+      esperandoDesde: Date.now() - 65_000,
+    });
+    render(<ConductorHomeScreen />);
+    await act(async () => {});
+    expect(screen.getByText('Esperando a Carlos · 1:05')).toBeTruthy();
+    await act(async () => { jest.advanceTimersByTime(2000); });
+    expect(screen.getByText('Esperando a Carlos · 1:07')).toBeTruthy();
+
+    await act(async () => { useConductorStore.setState({ estadoViaje: 'iniciado', esperandoDesde: null }); });
+    expect(screen.getByText('Finaliza el viaje a Surco')).toBeTruthy();
+  });
+
+  it('al terminar el viaje la franja desaparece y vuelve "Buscando viajes"', async () => {
+    useConductorStore.setState({ isOnline: true, solicitudActual: mockSolicitudes[0], estadoViaje: 'llegado' });
+    render(<ConductorHomeScreen />);
+    await act(async () => {});
+    expect(screen.getByText('Cobra S/ 18.50 en efectivo')).toBeTruthy();
+    await act(async () => { useConductorStore.setState({ estadoViaje: null }); });
+    expect(screen.queryByText('Viaje en curso')).toBeNull();
+    expect(screen.getByText('Buscando viajes cerca de ti')).toBeTruthy();
   });
 });
