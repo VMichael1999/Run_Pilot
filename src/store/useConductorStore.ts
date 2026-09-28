@@ -34,7 +34,8 @@ interface ConductorState {
   setSolicitudActual: (solicitud: Solicitud | null) => void;
   setEstadoViaje: (estado: EstadoViaje | null) => void;
   avanzarEstado: () => void;
-  finalizarViaje: () => void;
+  /** Guarda el viaje en el historial y devuelve su id (unico aunque se repita la solicitud). */
+  finalizarViaje: () => string | null;
   /** Cancelaciones de la sesion; la ultima se muestra en el inicio. */
   cancelaciones: Cancelacion[];
   cancelarViaje: (motivo: MotivoCancelacion) => void;
@@ -85,10 +86,12 @@ export const useConductorStore = create<ConductorState>((set, get) => ({
 
   finalizarViaje: () => {
     const solicitud = get().solicitudActual;
-    if (!solicitud) return;
+    if (!solicitud) return null;
+    const fechaMs = Date.now();
     const nuevoViaje: ViajeCompletado = {
-      id:           solicitud.id,
-      fechaMs:      Date.now(),
+      // La misma solicitud del tablero puede aceptarse mas de una vez
+      id:           `${solicitud.id}-${fechaMs}`,
+      fechaMs,
       solicitud,
       calificacion: 0,
     };
@@ -100,6 +103,7 @@ export const useConductorStore = create<ConductorState>((set, get) => ({
       historial:    [nuevoViaje, ...state.historial],
       // solicitudActual se mantiene para CalificarScreen
     }));
+    return nuevoViaje.id;
   },
 
   cancelarViaje: (motivo) => {

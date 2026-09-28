@@ -33,7 +33,11 @@ jest.mock('../services/directionsService', () => ({
 }));
 jest.mock('../components/PanelPago', () => {
   const { Text } = require('react-native');
-  return { PanelPago: () => <Text>panel-pago</Text> };
+  return {
+    PanelPago: ({ onFinalizar }: { onFinalizar: () => void }) => (
+      <Text accessibilityRole="button" onPress={onFinalizar}>panel-pago</Text>
+    ),
+  };
 });
 
 const loc = Location as jest.Mocked<typeof Location>;
@@ -191,5 +195,16 @@ describe('ViajeScreen · cancelar viaje', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Volver al viaje' }));
     expect(useConductorStore.getState().cancelaciones).toHaveLength(0);
     expect(navigation.reset).not.toHaveBeenCalled();
+  });
+});
+
+describe('ViajeScreen · finalizar', () => {
+  it('lleva a calificar el viaje recien guardado (su id, no el de la solicitud)', async () => {
+    await renderEn('llegado');
+    fireEvent.press(screen.getByText('panel-pago'));
+    const viaje = useConductorStore.getState().historial[0];
+    expect(viaje.solicitud.id).toBe(solicitud.id);
+    expect(viaje.id).not.toBe(solicitud.id);
+    expect(navigation.replace).toHaveBeenCalledWith('Calificar', { solicitudId: viaje.id });
   });
 });

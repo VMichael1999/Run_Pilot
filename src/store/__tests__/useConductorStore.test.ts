@@ -34,6 +34,26 @@ describe('useConductorStore · viaje', () => {
     expect(st.historial).toHaveLength(antes + 1);
   });
 
+  it('la misma solicitud terminada dos veces son dos viajes distintos', () => {
+    const terminar = () => {
+      useConductorStore.getState().setSolicitudActual(mockSolicitudes[0]);
+      return useConductorStore.getState().finalizarViaje();
+    };
+    const primero = terminar();
+    jest.advanceTimersByTime(60_000);
+    const segundo = terminar();
+    expect(primero).not.toBe(segundo);
+
+    useConductorStore.getState().actualizarCalificacion(segundo!, 5);
+    const h = useConductorStore.getState().historial;
+    expect(h.find((v) => v.id === segundo)?.calificacion).toBe(5);
+    expect(h.find((v) => v.id === primero)?.calificacion).toBe(0);
+  });
+
+  it('finalizar sin viaje no hace nada', () => {
+    expect(useConductorStore.getState().finalizarViaje()).toBeNull();
+  });
+
   it('ingresosDia suma la ganancia neta (tarifa menos comision), no la tarifa', () => {
     useConductorStore.setState({ ingresosDia: 0 });
     useConductorStore.getState().setSolicitudActual(mockSolicitudes[0]); // S/ 18.50 al 15 %
