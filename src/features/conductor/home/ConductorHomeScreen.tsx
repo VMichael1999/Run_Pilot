@@ -23,6 +23,7 @@ import { AppButton, InfoNote, MapButton, MapPill, Plate, StatusDot } from '@shar
 import { formatSoles, haceTiempo, inicioDelDia, pluralViajes } from '@shared/utils/format';
 import { confirmarCerrarSesion } from '@shared/utils/sesion';
 import { useAppTheme } from '@theme/useAppTheme';
+import { useMapStyle } from '@shared/components/map/mapStyle';
 import { FontFamily, Type } from '@theme/fonts';
 import { Spacing, BorderRadius, Hit, Shadow } from '@theme/spacing';
 import { Duration } from '@theme/motion';
@@ -68,6 +69,7 @@ export function ConductorHomeScreen() {
   const insets      = useSafeAreaInsets();
   const navigation  = useNavigation<Nav>();
   const theme       = useAppTheme();
+  const mapStyle = useMapStyle();
   const isOnline          = useConductorStore((s) => s.isOnline);
   const historial         = useConductorStore((s) => s.historial);
   const setOnline         = useConductorStore((s) => s.setOnline);
@@ -192,6 +194,7 @@ export function ConductorHomeScreen() {
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
+        customMapStyle={mapStyle}
         initialRegion={region}
         mapPadding={{ top: insets.top + 100, right: 0, bottom: panelH, left: 0 }}
         showsUserLocation

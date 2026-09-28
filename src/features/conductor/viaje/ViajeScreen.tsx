@@ -19,6 +19,7 @@ import { DestinationMarker, DriverMarker, PickupMarker } from '@shared/component
 import { RoutePolyline } from '@shared/components/map/RoutePolyline';
 import { distanciaRutaKm, formatDistancia, restanteEnRutaKm } from '@shared/utils/geo';
 import { useAppTheme } from '@theme/useAppTheme';
+import { useMapStyle } from '@shared/components/map/mapStyle';
 import { FontFamily, Type } from '@theme/fonts';
 import { Spacing, BorderRadius, Hit, HitSlop, Shadow } from '@theme/spacing';
 import { Duration, Timing } from '@theme/motion';
@@ -65,6 +66,7 @@ export function ViajeScreen({ route, navigation }: Props) {
   const { solicitudId } = route.params;
   const insets = useSafeAreaInsets();
   const theme  = useAppTheme();
+  const mapStyle = useMapStyle();
   const mapRef = useRef<MapView>(null);
 
   const solicitudActual = useConductorStore((s) => s.solicitudActual);
@@ -238,6 +240,7 @@ export function ViajeScreen({ route, navigation }: Props) {
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
+        customMapStyle={mapStyle}
         initialRegion={
           origen ? { ...origen.coordenadas, latitudeDelta: 0.02, longitudeDelta: 0.02 } : LIMA_REGION
         }
