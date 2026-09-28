@@ -27,6 +27,7 @@ export function RouteStops({ origen, destino }: { origen: Stop; destino: Stop })
               : { borderColor: theme.text, backgroundColor: theme.text, borderRadius: 2 },
           ]}
         />
+        {/* La linea sale pegada al circulo y entra en la fila siguiente hasta tocar el cuadrado */}
         {esOrigen && <View style={[styles.line, { backgroundColor: theme.divider }]} />}
       </View>
       <View style={[styles.text, esOrigen && styles.textGap]}>
@@ -45,6 +46,9 @@ export function RouteStops({ origen, destino }: { origen: Stop; destino: Stop })
   );
 }
 
+/** Separacion del marcador respecto al borde superior de su fila (centra con la primera linea). */
+const MARK_TOP = 4;
+
 const styles = StyleSheet.create({
   stop: { flexDirection: 'row', gap: Spacing.md },
   rail: { width: 16, alignItems: 'center' },
@@ -53,9 +57,9 @@ const styles = StyleSheet.create({
     height: 11,
     borderRadius: 6,
     borderWidth: 3,
-    marginTop: 4,
+    marginTop: MARK_TOP,
   },
-  line: { width: 2, flex: 1, minHeight: 18, marginVertical: 3 },
+  line: { width: 2, flex: 1, minHeight: 18, marginBottom: -MARK_TOP },
   text: { flex: 1, gap: 1 },
   textGap: { paddingBottom: Spacing.sm + 2 },
   addr: { fontFamily: Type.label.fontFamily },

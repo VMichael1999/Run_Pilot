@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import MapView, { PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -12,11 +12,13 @@ import { useConductorStore } from '@store/useConductorStore';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { PanelPago } from './components/PanelPago';
 import { fetchRoute, type LatLng } from './services/directionsService';
-import { AppButton, AvatarPasajero, MapButton, SlideToConfirm, SosButton } from '@shared/components/ui';
+import { AvatarPasajero, MapButton, SlideToConfirm, SosButton } from '@shared/components/ui';
+import { esEfectivo } from '@shared/utils/cobro';
+import { formatSoles } from '@shared/utils/format';
 import { DestinationMarker, DriverMarker, PickupMarker } from '@shared/components/map/RouteMarkers';
+import { RoutePolyline } from '@shared/components/map/RoutePolyline';
 import { distanciaRutaKm, formatDistancia, restanteEnRutaKm } from '@shared/utils/geo';
-import { useAppTheme, useIsDark } from '@theme/useAppTheme';
-import { MapStyle } from '@theme/mapStyle';
+import { useAppTheme } from '@theme/useAppTheme';
 import { FontFamily, Type } from '@theme/fonts';
 import { Spacing, BorderRadius, Hit, HitSlop, Shadow } from '@theme/spacing';
 import { Duration, Timing } from '@theme/motion';
@@ -33,12 +35,19 @@ function faseDe(estado: EstadoViaje): Fase | null {
   return null;
 }
 
-/** La siguiente accion concreta en cada estado (se avanza con un toque). */
-const ACCION: Partial<Record<EstadoViaje, string>> = {
-  aceptado:  'Ir al punto de recojo',
-  en_camino: 'Llegué al punto de recojo',
-  esperando: 'Iniciar viaje',
+/**
+ * La siguiente accion concreta en cada estado. Todas se confirman deslizando,
+ * como en Uber y DiDi: un bache no debe avanzar el viaje.
+ */
+const ACCION: Partial<Record<EstadoViaje, { label: string; a11y: string }>> = {
+  aceptado:  { label: 'Ir al punto de recojo', a11y: 'Empezar a ir al punto de recojo' },
+  en_camino: { label: 'Llegué al punto de recojo', a11y: 'Confirmar que llegaste al punto de recojo' },
+  esperando: { label: 'Iniciar viaje', a11y: 'El pasajero subió, iniciar viaje' },
+  iniciado:  { label: 'Finalizar viaje', a11y: 'Finalizar viaje y pasar al cobro' },
 };
+
+/** Espera sin costo en el punto de recojo (referencia: Uber espera 5 min en UberX). */
+const ESPERA_GRATIS_SEG = 5 * 60;
 
 const LIMA_REGION = {
   latitude: -12.0464, longitude: -77.0428,
@@ -56,7 +65,6 @@ export function ViajeScreen({ route, navigation }: Props) {
   const { solicitudId } = route.params;
   const insets = useSafeAreaInsets();
   const theme  = useAppTheme();
-  const isDark = useIsDark();
   const mapRef = useRef<MapView>(null);
 
   const solicitudActual = useConductorStore((s) => s.solicitudActual);
@@ -149,14 +157,6 @@ export function ViajeScreen({ route, navigation }: Props) {
   const restanteKm = fase === 'viaje' && driverCoord && routeCoords.length > 1
     ? restanteEnRutaKm(routeCoords, driverCoord)
     : totalKm;
-  const progreso = totalKm > 0 ? Math.min(1, Math.max(0, 1 - restanteKm / totalKm)) : 0;
-  // Lo unico que se mueve durante el viaje
-  const progresoSV = useSharedValue(0);
-  useEffect(() => {
-    progresoSV.value = withTiming(progreso, Timing.slow);
-  }, [progreso, progresoSV]);
-  const progresoStyle = useAnimatedStyle(() => ({ width: `${progresoSV.value * 100}%` }));
-
   if (!solicitud || !estadoViaje) return null;
 
   const pasajero = solicitud.pasajero;
@@ -203,6 +203,31 @@ export function ViajeScreen({ route, navigation }: Props) {
       sub: minViaje ? `llegas ${hora(Date.now() + minViaje * 60_000)}` : undefined,
     };
 
+  const efectivo = esEfectivo(solicitud.metodoPago);
+  const cobro = { label: efectivo ? 'cobra en efectivo' : `pagado con ${solicitud.metodoPago}`, valor: formatSoles(solicitud.precio), tono: efectivo ? theme.cash : undefined };
+  const esperaRestante = Math.max(0, ESPERA_GRATIS_SEG - esperandoSeg);
+  const datos: { label: string; valor: string; tono?: string }[] =
+    fase === 'recojo' ? [
+      cobro,
+      { label: 'servicio', valor: 'RunX' },
+      { label: 'hasta el recojo', valor: recojoKm ? formatDistancia(recojoKm) : '—' },
+    ] : fase === 'esperando' ? [
+      { label: esperaRestante > 0 ? 'espera sin costo' : 'espera excedida', valor: cronometro(esperaRestante), tono: esperaRestante > 0 ? undefined : theme.danger },
+      cobro,
+      { label: 'viaje', valor: destino?.duracionMin ? `${destino.duracionMin} min` : '—' },
+    ] : [
+      { label: 'llegada', valor: minViaje ? hora(Date.now() + minViaje * 60_000) : '—' },
+      { label: 'faltan', valor: totalKm > 0 ? formatDistancia(restanteKm) : '—' },
+      cobro,
+    ];
+
+  type Nota = { icono: keyof typeof Ionicons.glyphMap; texto: string };
+  const notas: Nota[] = [];
+  if (fase !== 'viaje' && origen?.notas) notas.push({ icono: 'location-outline', texto: origen.notas });
+  if (solicitud.comentario) notas.push({ icono: 'chatbox-ellipses-outline', texto: `"${solicitud.comentario}"` });
+
+  const accion = ACCION[estadoViaje];
+
   const contacto = (esquema: 'tel' | 'sms') => {
     if (pasajero.telefono) void Linking.openURL(`${esquema}:${pasajero.telefono}`);
   };
@@ -213,20 +238,13 @@ export function ViajeScreen({ route, navigation }: Props) {
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         provider={PROVIDER_GOOGLE}
-        customMapStyle={isDark ? MapStyle.dark : MapStyle.light}
         initialRegion={
           origen ? { ...origen.coordenadas, latitudeDelta: 0.02, longitudeDelta: 0.02 } : LIMA_REGION
         }
         showsUserLocation={false}
         toolbarEnabled={false}
       >
-        {routeCoords.length > 1 && (
-          <>
-            {/* Borde para que la ruta se lea sobre cualquier calle */}
-            <Polyline coordinates={routeCoords} strokeColor={theme.routeCase} strokeWidth={10} lineJoin="round" />
-            <Polyline coordinates={routeCoords} strokeColor={theme.route} strokeWidth={5} lineJoin="round" />
-          </>
-        )}
+        <RoutePolyline coordinates={routeCoords} />
         {fase !== 'viaje' && origen && <PickupMarker coordinate={origen.coordenadas} active />}
         {fase === 'viaje' && destino && <DestinationMarker coordinate={destino.coordenadas} />}
         {driverCoord && <DriverMarker coordinate={driverCoord} heading={heading} />}
@@ -270,69 +288,87 @@ export function ViajeScreen({ route, navigation }: Props) {
         onLayout={(e) => setPanelH(e.nativeEvent.layout.height)}
       >
         <Animated.View key={`panel-${fase}`} entering={FadeInDown.duration(Duration.base)} style={styles.panelBody}>
-          {fase === 'viaje' ? (
-            <>
-              <View style={styles.hRow}>
-                <Text style={[Type.bodyStrong, { color: theme.text }]}>{nombreCorto} a bordo</Text>
-                {totalKm > 0 && (
+          {/* Pasajero: quien es y como contactarlo */}
+          <View style={styles.hRow}>
+            <View style={styles.pax}>
+              <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={44} />
+              <View style={styles.flex}>
+                <Text style={[Type.label, { color: theme.text }]} numberOfLines={1}>
+                  {fase === 'viaje' ? `${pasajero.nombre} ${pasajero.apellido} · a bordo` : `${pasajero.nombre} ${pasajero.apellido}`}
+                </Text>
+                <View style={styles.rating}>
+                  <Ionicons name="star" size={12} color={theme.textMuted} />
                   <Text style={[Type.detail, { color: theme.textMuted }]}>
-                    {(totalKm - restanteKm).toFixed(1)} de {totalKm.toFixed(1)} km
+                    {pasajero.calificacion.toFixed(1)} · {pasajero.totalViajes} viajes
                   </Text>
-                )}
-              </View>
-              <View
-                style={[styles.prog, { backgroundColor: theme.divider }]}
-                accessible
-                accessibilityRole="progressbar"
-                accessibilityLabel="Progreso del viaje"
-                accessibilityValue={{ min: 0, max: 100, now: Math.round(progreso * 100) }}
-              >
-                <Animated.View style={[styles.progFill, { backgroundColor: theme.onTrip }, progresoStyle]} />
-              </View>
-              <SlideToConfirm
-                tone="primary"
-                label="Desliza para finalizar"
-                accessibilityLabel="Finalizar viaje y pasar al cobro"
-                onConfirm={handleAvanzar}
-              />
-            </>
-          ) : (
-            <>
-              <View style={styles.hRow}>
-                <View style={styles.pax}>
-                  <AvatarPasajero nombre={pasajero.nombre} apellido={pasajero.apellido} size={40} />
-                  <View style={styles.flex}>
-                    <Text style={[Type.label, { color: theme.text }]}>{nombreCorto}</Text>
-                    {origen?.notas ? (
-                      <Text style={[Type.detail, { color: theme.textMuted }]} numberOfLines={2}>{origen.notas}</Text>
-                    ) : null}
-                  </View>
                 </View>
-                {pasajero.telefono ? (
-                  <View style={styles.contact}>
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      accessibilityLabel={`Llamar a ${pasajero.nombre}`}
-                      onPress={() => contacto('tel')}
-                      hitSlop={HitSlop}
-                      style={[styles.icb, { borderColor: theme.divider }]}
-                    >
-                      <Ionicons name="call-outline" size={20} color={theme.text} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      accessibilityRole="button"
-                      accessibilityLabel={`Escribir a ${pasajero.nombre}`}
-                      onPress={() => contacto('sms')}
-                      hitSlop={HitSlop}
-                      style={[styles.icb, { borderColor: theme.divider }]}
-                    >
-                      <Ionicons name="chatbox-outline" size={20} color={theme.text} />
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
               </View>
-              <AppButton label={ACCION[estadoViaje] ?? ''} onPress={handleAvanzar} />
-            </>
+            </View>
+            {pasajero.telefono ? (
+              <View style={styles.contact}>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={`Llamar a ${pasajero.nombre}`}
+                  onPress={() => contacto('tel')}
+                  hitSlop={HitSlop}
+                  style={[styles.icb, { borderColor: theme.divider }]}
+                >
+                  <Ionicons name="call-outline" size={20} color={theme.text} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={`Escribir a ${pasajero.nombre}`}
+                  onPress={() => contacto('sms')}
+                  hitSlop={HitSlop}
+                  style={[styles.icb, { borderColor: theme.divider }]}
+                >
+                  <Ionicons name="chatbox-outline" size={20} color={theme.text} />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Tres datos de un vistazo, segun la fase */}
+          <View style={[styles.facts, { borderColor: theme.divider }]}>
+            {datos.map((d, i) => (
+              <View
+                key={d.label}
+                style={[styles.fact, i > 0 && [styles.factSep, { borderLeftColor: theme.divider }]]}
+                accessible
+                accessibilityLabel={`${d.label}: ${d.valor}`}
+              >
+                <Text
+                  style={[Type.kpi, { color: d.tono ?? theme.text }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {d.valor}
+                </Text>
+                <Text style={[Type.kpiLabel, { color: theme.textMuted }]}>{d.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Lo que el pasajero dejo dicho: referencia del recojo y comentario */}
+          {notas.length > 0 && (
+            <View style={[styles.notas, { backgroundColor: theme.background }]}>
+              {notas.map((n) => (
+                <View key={n.texto} style={styles.nota}>
+                  <Ionicons name={n.icono} size={16} color={theme.textMuted} style={styles.notaIcon} />
+                  <Text style={[Type.detail, styles.flex, { color: theme.text }]}>{n.texto}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {accion && (
+            <SlideToConfirm
+              key={estadoViaje}
+              tone="primary"
+              label={accion.label}
+              accessibilityLabel={accion.a11y}
+              onConfirm={handleAvanzar}
+            />
           )}
         </Animated.View>
       </View>
@@ -397,6 +433,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  prog: { height: 6, borderRadius: 6, overflow: 'hidden' },
-  progFill: { height: '100%', borderRadius: 6 },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  facts: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1 },
+  fact: { flex: 1, paddingVertical: Spacing.sm + 2, paddingRight: 6 },
+  factSep: { paddingLeft: Spacing.sm + 2, borderLeftWidth: 1 },
+  notas: { gap: Spacing.sm, padding: Spacing.md, borderRadius: BorderRadius.md },
+  nota: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
+  notaIcon: { marginTop: 1 },
 });

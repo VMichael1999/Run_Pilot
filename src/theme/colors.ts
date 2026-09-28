@@ -52,7 +52,8 @@ export const ThemeColors = {
     dangerSoft:  '#FBE3E0',
 
     // Mapa y graficos
-    route:      Palette.ink,
+    // Ruta: negra con borde blanco de dia
+    route:      Palette.black,
     routeCase:  Palette.white,
     chartBar:   '#B9C2CA',
     starFill:   Palette.lime,
@@ -90,8 +91,9 @@ export const ThemeColors = {
     onDanger:    Palette.ink,
     dangerSoft:  '#3A1916',
 
-    route:      Palette.lime,
-    routeCase:  '#101519',
+    // Ruta: verde con borde negro de noche
+    route:      '#3DCB7E',
+    routeCase:  Palette.black,
     chartBar:   '#3A444D',
     starFill:   Palette.lime,
     starStroke: Palette.limeStroke,

@@ -55,6 +55,13 @@ describe('ConductorHomeScreen', () => {
     expect(screen.getByRole('button', { name: 'Desconectarme' })).toBeTruthy();
   });
 
+  it('acceso directo al tablero de solicitudes', async () => {
+    render(<ConductorHomeScreen />);
+    await act(async () => {});
+    fireEvent.press(screen.getByRole('button', { name: /^Tablero de solicitudes, \d+ disponibles$/ }));
+    expect(mockNavigate).toHaveBeenCalledWith('Solicitudes');
+  });
+
   it('el vehiculo lleva a cambiar vehiculo', async () => {
     render(<ConductorHomeScreen />);
     await act(async () => {});
