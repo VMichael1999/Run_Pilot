@@ -223,6 +223,21 @@ export function ConductorHomeScreen() {
         </MapPill>
       </View>
 
+      {/* Acceso directo al tablero, aparte del menu */}
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={`Tablero de solicitudes, ${mockSolicitudes.length} disponibles`}
+        onPress={() => navigation.navigate('Solicitudes')}
+        activeOpacity={0.85}
+        style={[styles.tablero, { bottom: panelH + Spacing.md, backgroundColor: theme.surface }]}
+      >
+        <Ionicons name="list-outline" size={20} color={theme.text} />
+        <Text style={[Type.label, { color: theme.text }]}>Tablero</Text>
+        <View style={[styles.tableroBadge, { backgroundColor: theme.signal }]}>
+          <Text style={[Type.tag, { color: theme.onSignal }]}>{mockSolicitudes.length}</Text>
+        </View>
+      </TouchableOpacity>
+
       {/* Panel inferior: un solo estado a la vez */}
       <View
         style={[
@@ -333,6 +348,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.sm,
+  },
+  tablero: {
+    position: 'absolute',
+    left: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    minHeight: Hit.min,
+    paddingLeft: 14,
+    paddingRight: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    ...Shadow.raise,
+  },
+  tableroBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   earnWrap: {
     position: 'absolute',
