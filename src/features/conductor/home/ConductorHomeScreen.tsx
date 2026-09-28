@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated as RNAnimated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -11,15 +11,17 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import { useConductorStore } from '@store/useConductorStore';
 import { useAuthStore } from '@store/useAuthStore';
-import { DrawerMenu, DRAWER_WIDTH } from './DrawerMenu';
+import { DrawerMenu } from './DrawerMenu';
 import type { DrawerMenuItem } from './DrawerMenu';
 import { IncomingRequestOverlay } from './components/IncomingRequestOverlay';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { mockConductor } from '../data/mockConductor';
+import { mockBilletera } from '../data/mockIngresos';
 import type { Solicitud } from '../types';
 import type { LatLng } from '../viaje/services/directionsService';
 import { AppButton, InfoNote, MapButton, MapPill, Plate, StatusDot } from '@shared/components/ui';
 import { formatSoles, haceTiempo, inicioDelDia, pluralViajes } from '@shared/utils/format';
+import { confirmarCerrarSesion } from '@shared/utils/sesion';
 import { useAppTheme, useIsDark } from '@theme/useAppTheme';
 import { MapStyle } from '@theme/mapStyle';
 import { FontFamily, Type } from '@theme/fonts';
@@ -69,11 +71,9 @@ export function ConductorHomeScreen() {
   const theme       = useAppTheme();
   const isDark      = useIsDark();
   const isOnline          = useConductorStore((s) => s.isOnline);
-  const ingresosDia       = useConductorStore((s) => s.ingresosDia);
   const historial         = useConductorStore((s) => s.historial);
   const setOnline         = useConductorStore((s) => s.setOnline);
   const setSolicitudActual = useConductorStore((s) => s.setSolicitudActual);
-  const phone       = useAuthStore((s) => s.phone);
   const logout      = useAuthStore((s) => s.logout);
 
   const [toggling,        setToggling]        = useState(false);
@@ -83,7 +83,6 @@ export function ConductorHomeScreen() {
   const driverPos  = useRef<LatLng | null>(null);
   const simTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const translateX = useRef(new RNAnimated.Value(-DRAWER_WIDTH)).current;
   const mapRef     = useRef<MapView>(null);
 
   // GPS
@@ -130,15 +129,9 @@ export function ConductorHomeScreen() {
     navigation.navigate('Viaje', { solicitudId: s.id });
   };
 
-  // Drawer
-  const abrirDrawer  = () => {
-    setDrawerVisible(true);
-    RNAnimated.timing(translateX, { toValue: 0, duration: 280, useNativeDriver: true }).start();
-  };
-  const cerrarDrawer = () => {
-    RNAnimated.timing(translateX, { toValue: -DRAWER_WIDTH, duration: 240, useNativeDriver: true })
-      .start(() => setDrawerVisible(false));
-  };
+  // Menu lateral
+  const abrirDrawer  = () => setDrawerVisible(true);
+  const cerrarDrawer = () => setDrawerVisible(false);
 
   const handleToggleOnline = () => {
     if (toggling) return;
@@ -173,20 +166,26 @@ export function ConductorHomeScreen() {
   const [panelH, setPanelH] = useState(0);
   const { vehiculo } = mockConductor;
 
+  // Se navega cuando el menu termino de cerrarse
   const nav = (screen: keyof ConductorStackParamList) => {
     cerrarDrawer();
-    setTimeout(() => navigation.navigate(screen as any), 260);
+    setTimeout(() => navigation.navigate(screen as never), Duration.fast);
   };
 
   const drawerItems: DrawerMenuItem[] = [
-    { label: 'Tablero de solicitudes', icono: 'list-outline',      onPress: () => nav('Solicitudes')          },
-    { label: 'Billetera',              icono: 'wallet-outline',    badge: `S/ ${ingresosDia.toFixed(2)}`, onPress: () => nav('Billetera') },
-    { label: 'Servicios programados',  icono: 'calendar-outline',  onPress: () => nav('ServiciosProgramados') },
-    { label: 'Ingresos',               icono: 'cash-outline',      onPress: () => nav('Ingresos')             },
-    { label: 'Experiencia',           icono: 'star-outline',      onPress: () => nav('Experiencia')          },
-    { label: 'Historial de viajes',   icono: 'time-outline',      onPress: () => nav('HistorialViaje')       },
-    { label: 'Configuración',         icono: 'settings-outline',  onPress: () => nav('Configuracion')        },
-    { label: 'Cerrar sesión',         icono: 'log-out-outline',   onPress: () => { cerrarDrawer(); setTimeout(logout, 260); } },
+    { label: 'Tablero de solicitudes', icono: 'list-outline',     onPress: () => nav('Solicitudes') },
+    { label: 'Billetera',              icono: 'wallet-outline',   badge: formatSoles(mockBilletera.saldo), onPress: () => nav('Billetera') },
+    { label: 'Servicios programados',  icono: 'calendar-outline', onPress: () => nav('ServiciosProgramados') },
+    { label: 'Ingresos',               icono: 'cash-outline',     onPress: () => nav('Ingresos') },
+    { label: 'Experiencia',            icono: 'star-outline',     onPress: () => nav('Experiencia') },
+    { label: 'Historial de viajes',    icono: 'time-outline',     onPress: () => nav('HistorialViaje') },
+    { label: 'Configuración',          icono: 'settings-outline', onPress: () => nav('Configuracion') },
+    {
+      label: 'Cerrar sesión',
+      icono: 'log-out-outline',
+      salida: true,
+      onPress: () => { cerrarDrawer(); confirmarCerrarSesion(logout); },
+    },
   ];
 
   return (
@@ -307,13 +306,17 @@ export function ConductorHomeScreen() {
 
       <DrawerMenu
         visible={drawerVisible}
-        translateX={translateX}
         onClose={cerrarDrawer}
         items={drawerItems}
-        nombre="Conductor"
-        telefono={phone || ''}
-        saldo={ingresosDia}
-        simboloMoneda="S/"
+        perfil={{
+          nombre: mockConductor.nombre,
+          apellido: mockConductor.apellido,
+          calificacion: mockConductor.calificacion,
+          viajes: pluralViajes(mockConductor.totalViajes),
+          placa: vehiculo.placa,
+          vehiculo: `${vehiculo.marca} ${vehiculo.modelo}`,
+          vehiculoDetalle: `${vehiculo.color} · ${vehiculo.anio}`,
+        }}
         onPerfil={() => nav('Cuenta')}
       />
     </View>

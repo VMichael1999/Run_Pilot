@@ -1,4 +1,4 @@
-import { formatSoles, haceTiempo, pluralViajes } from '../format';
+import { formatSoles, formatTelefono, haceTiempo, pluralViajes } from '../format';
 
 describe('formatSoles', () => {
   it.each([
@@ -25,4 +25,16 @@ describe('haceTiempo', () => {
   it('menos de un minuto', () => expect(haceTiempo(ahora - 30_000, ahora)).toBe('hace un momento'));
   it('minutos', () => expect(haceTiempo(ahora - 3 * 60_000, ahora)).toBe('hace 3 min'));
   it('horas', () => expect(haceTiempo(ahora - 125 * 60_000, ahora)).toBe('hace 2 h'));
+  it('dias', () => {
+    expect(haceTiempo(ahora - 26 * 3_600_000, ahora)).toBe('hace 1 día');
+    expect(haceTiempo(ahora - 50 * 3_600_000, ahora)).toBe('hace 2 días');
+  });
+});
+
+describe('formatTelefono', () => {
+  it('agrupa de a 3', () => {
+    expect(formatTelefono('987654321')).toBe('+51 987 654 321');
+    expect(formatTelefono('987 65-4321', '+51')).toBe('+51 987 654 321');
+    expect(formatTelefono('')).toBe('');
+  });
 });

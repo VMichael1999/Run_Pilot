@@ -1,95 +1,88 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { ConductorStackParamList } from '@navigation/types';
 import { useAuthStore } from '@store/useAuthStore';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppHeader, AppListRow, AppSectionTitle, Plate, Tag } from '@shared/components/ui';
+import { formatTelefono, pluralViajes } from '@shared/utils/format';
+import { confirmarCerrarSesion } from '@shared/utils/sesion';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Spacing } from '@theme/spacing';
+import { mockConductor } from '../data/mockConductor';
 
 type Nav = NativeStackNavigationProp<ConductorStackParamList>;
 
-interface MenuItem {
-  label: string;
-  icono: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
-  peligro?: boolean;
-}
-
 export function CuentaScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
   const navigation = useNavigation<Nav>();
   const phone = useAuthStore((s) => s.phone);
+  const countryCode = useAuthStore((s) => s.countryCode);
   const logout = useAuthStore((s) => s.logout);
+  const c = mockConductor;
+  const v = c.vehiculo;
 
-  const menuItems: MenuItem[] = [
-    {
-      label: 'Historial de viajes',
-      icono: 'time-outline',
-      onPress: () => navigation.navigate('HistorialViaje'),
-    },
-    {
-      label: 'Configuracion',
-      icono: 'settings-outline',
-      onPress: () => navigation.navigate('Configuracion'),
-    },
-    {
-      label: 'Cerrar sesion',
-      icono: 'log-out-outline',
-      onPress: logout,
-      peligro: true,
-    },
-  ];
+  const chevron = <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />;
+  const icono = (name: keyof typeof Ionicons.glyphMap, color = theme.text) => (
+    <Ionicons name={name} size={20} color={color} />
+  );
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      <View style={[styles.perfilHeader, { paddingTop: insets.top + Spacing.md }]}>
-        <TouchableOpacity style={styles.btnBack} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-          <Ionicons name="chevron-back" size={22} color={Colors.white} />
-        </TouchableOpacity>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarLetra}>C</Text>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
+      <AppHeader title="Cuenta" />
+      <ScrollView contentContainerStyle={[styles.pad, { paddingBottom: insets.bottom + Spacing['2xl'] }]}>
+        <View style={styles.perfil}>
+          <View style={[styles.av, { backgroundColor: theme.signal }]}>
+            <Text style={[styles.avText, { color: theme.onSignal }]}>{c.nombre.charAt(0)}{c.apellido.charAt(0)}</Text>
+          </View>
+          <View style={styles.flex}>
+            <Text style={[Type.title, { color: theme.text }]}>{c.nombre} {c.apellido}</Text>
+            <Text style={[Type.body, { color: theme.textMuted }]}>
+              {phone ? formatTelefono(phone, countryCode) : 'Sin número registrado'}
+            </Text>
+          </View>
         </View>
-        <Text style={styles.nombre}>Conductor</Text>
-        <Text style={styles.telefono}>{phone || 'Sin numero'}</Text>
-        <View style={styles.rolChip}>
-          <Ionicons name="car" size={12} color={Colors.white} />
-          <Text style={styles.rolText}>Conductor verificado</Text>
+        <View style={styles.tags}>
+          <Tag label="Conductor verificado" tone="success" />
+          <Tag label={`★ ${c.calificacion.toFixed(2)} · ${pluralViajes(c.totalViajes)}`} />
         </View>
-      </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.seccionLabel}>Mi cuenta</Text>
+        <View>
+          <AppSectionTitle>Vehículo activo</AppSectionTitle>
+          <View style={[styles.group, { backgroundColor: theme.surface, borderColor: theme.divider }]}>
+            <AppListRow
+              title={`${v.marca} ${v.modelo}`}
+              subtitle={`${v.color} · ${v.anio}`}
+              left={<Plate placa={v.placa} />}
+              right={chevron}
+              accessibilityLabel={`Vehículo activo ${v.marca} ${v.modelo}, placa ${v.placa}. Cambiar vehículo`}
+              onPress={() => navigation.navigate('SeleccionarVehiculo')}
+              style={styles.rowPad}
+            />
+          </View>
+        </View>
 
-        <View style={styles.menuGroup}>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={item.label}
-              style={[
-                styles.menuItem,
-                index < menuItems.length - 1 && styles.menuItemBorder,
-              ]}
-              onPress={item.onPress}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuIcono, item.peligro && styles.menuIconoPeligro]}>
-                <Ionicons
-                  name={item.icono}
-                  size={18}
-                  color={item.peligro ? Colors.error : Colors.primary}
-                />
-              </View>
-              <Text style={[styles.menuLabel, item.peligro && styles.menuLabelPeligro]}>
-                {item.label}
-              </Text>
-              {!item.peligro && (
-                <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
-              )}
-            </TouchableOpacity>
-          ))}
+        <View>
+          <AppSectionTitle>Mi cuenta</AppSectionTitle>
+          <View style={[styles.group, { backgroundColor: theme.surface, borderColor: theme.divider }]}>
+            <AppListRow title="Experiencia" left={icono('star-outline')} right={chevron} onPress={() => navigation.navigate('Experiencia')} showDivider style={styles.rowPad} />
+            <AppListRow title="Historial de viajes" left={icono('time-outline')} right={chevron} onPress={() => navigation.navigate('HistorialViaje')} showDivider style={styles.rowPad} />
+            <AppListRow title="Configuración" left={icono('settings-outline')} right={chevron} onPress={() => navigation.navigate('Configuracion')} style={styles.rowPad} />
+          </View>
+        </View>
+
+        <View style={[styles.group, { backgroundColor: theme.surface, borderColor: theme.divider }]}>
+          <AppListRow
+            title="Cerrar sesión"
+            left={icono('log-out-outline', theme.danger)}
+            titleStyle={{ color: theme.danger }}
+            onPress={() => confirmarCerrarSesion(logout)}
+            style={styles.rowPad}
+          />
         </View>
       </ScrollView>
     </View>
@@ -97,112 +90,12 @@ export function CuentaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.backgroundLight },
-  perfilHeader: {
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    paddingBottom: Spacing['3xl'],
-    paddingHorizontal: Spacing.lg,
-  },
-  btnBack: {
-    position: 'absolute',
-    top: Spacing.md,
-    left: Spacing.lg,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.md,
-  },
-  avatarLetra: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize['2xl'],
-    color: Colors.primary,
-  },
-  nombre: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.lg,
-    color: Colors.white,
-  },
-  telefono: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 4,
-  },
-  rolChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    marginTop: Spacing.md,
-  },
-  rolText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.white,
-  },
-  scroll: {
-    padding: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  seccionLabel: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: Spacing.sm,
-  },
-  menuGroup: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    ...Shadow.sm,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  menuItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  menuIcono: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#eef2f7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuIconoPeligro: {
-    backgroundColor: '#fff0f0',
-  },
-  menuLabel: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-  },
-  menuLabelPeligro: {
-    color: Colors.error,
-  },
+  flex: { flex: 1 },
+  pad: { paddingHorizontal: 18, paddingTop: Spacing.xs, gap: Spacing.lg },
+  perfil: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  av: { width: 64, height: 64, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  avText: { fontFamily: FontFamily.bold, fontSize: 22 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  group: { borderRadius: BorderRadius.lg, borderWidth: 1 },
+  rowPad: { paddingHorizontal: 14 },
 });

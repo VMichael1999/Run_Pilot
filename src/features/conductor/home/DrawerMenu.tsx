@@ -1,221 +1,191 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Animated,
-  StyleSheet,
-  Dimensions,
-  ScrollView,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import React, { useEffect } from 'react';
+import { BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, SlideInLeft, SlideOutLeft } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius } from '@theme/spacing';
-
-export const DRAWER_WIDTH = Dimensions.get('window').width * 0.82;
+import { Plate } from '@shared/components/ui';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { BorderRadius, Hit, Spacing } from '@theme/spacing';
+import { Duration } from '@theme/motion';
 
 export interface DrawerMenuItem {
   label: string;
   icono: keyof typeof Ionicons.glyphMap;
   badge?: string;
+  /** Cerrar sesion: va al final y en color de peligro. */
+  salida?: boolean;
   onPress: () => void;
 }
 
 interface Props {
   visible: boolean;
-  translateX: Animated.Value;
   onClose: () => void;
   items: DrawerMenuItem[];
-  nombre: string;
-  telefono: string;
-  saldo: number;
-  simboloMoneda: string;
+  perfil: {
+    nombre: string;
+    apellido: string;
+    calificacion: number;
+    viajes: string;
+    placa: string;
+    vehiculo: string;
+    vehiculoDetalle: string;
+  };
   onPerfil: () => void;
 }
 
-export function DrawerMenu({
-  visible,
-  translateX,
-  onClose,
-  items,
-  nombre,
-  telefono,
-  saldo,
-  simboloMoneda,
-  onPerfil,
-}: Props) {
+/**
+ * Menu lateral. El perfil muestra la calificacion y la placa porque es lo que
+ * el conductor revisa antes de salir. Se renderiza como dos hermanos (fondo y
+ * panel) para que sus animaciones de salida corran al cerrarse.
+ */
+export function DrawerMenu({ visible, onClose, items, perfil, onPerfil }: Props) {
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+
+  // Atras de Android cierra el menu en lugar de salir de la app
+  useEffect(() => {
+    if (!visible) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [visible, onClose]);
 
   if (!visible) return null;
 
-  return (
-    <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-      {/* Overlay oscuro */}
-      <TouchableWithoutFeedback onPress={onClose}>
-        <Animated.View
-          style={[
-            styles.overlay,
-            {
-              opacity: translateX.interpolate({
-                inputRange: [-DRAWER_WIDTH, 0],
-                outputRange: [0, 0.5],
-              }),
-            },
-          ]}
-        />
-      </TouchableWithoutFeedback>
+  const principales = items.filter((i) => !i.salida);
+  const salida = items.find((i) => i.salida);
 
-      {/* Panel del drawer */}
+  const fila = (item: DrawerMenuItem) => (
+    <Pressable
+      key={item.label}
+      accessibilityRole="button"
+      accessibilityLabel={item.badge ? `${item.label}, ${item.badge}` : item.label}
+      onPress={item.onPress}
+      style={({ pressed }) => [styles.item, pressed && { backgroundColor: theme.background }]}
+    >
+      <Ionicons name={item.icono} size={20} color={item.salida ? theme.danger : theme.text} />
+      <Text style={[styles.itemLabel, { color: item.salida ? theme.danger : theme.text }]}>{item.label}</Text>
+      {item.badge ? (
+        <View style={[styles.badge, { backgroundColor: theme.onlineSoft }]}>
+          <Text style={[Type.tag, { color: theme.online }]}>{item.badge}</Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+
+  return (
+    <>
       <Animated.View
+        entering={FadeIn.duration(Duration.base)}
+        exiting={FadeOut.duration(Duration.fast)}
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.scrim }]}
+      >
+        <Pressable
+          style={StyleSheet.absoluteFillObject}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar menú"
+        />
+      </Animated.View>
+
+      <Animated.View
+        entering={SlideInLeft.duration(Duration.base)}
+        exiting={SlideOutLeft.duration(Duration.fast)}
+        accessibilityViewIsModal
         style={[
           styles.drawer,
-          { width: DRAWER_WIDTH, transform: [{ translateX }] },
+          {
+            backgroundColor: theme.surface,
+            paddingTop: insets.top + Spacing.lg,
+            paddingBottom: insets.bottom + Spacing.lg,
+          },
         ]}
       >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarLetra}>
-              {nombre.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.perfilRow} onPress={onPerfil} activeOpacity={0.7}>
-            <View>
-              <Text style={styles.headerNombre}>{nombre}</Text>
-              <View style={styles.perfilLinkRow}>
-                <Text style={styles.perfilLink}>Mi perfil</Text>
-                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.8)" />
+        <View style={styles.brand}>
+          <Image source={require('../../../../assets/icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
+          <Text style={[styles.brandText, { color: theme.text }]}>Run Pilot</Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${perfil.nombre} ${perfil.apellido}, ${perfil.calificacion} estrellas, ${perfil.viajes}. Vehículo ${perfil.vehiculo}, placa ${perfil.placa}. Ver cuenta`}
+          onPress={onPerfil}
+          style={({ pressed }) => [styles.prof, { backgroundColor: theme.background }, pressed && styles.pressed]}
+        >
+          <View style={styles.row}>
+            <View style={[styles.av, { backgroundColor: theme.signal }]}>
+              <Text style={[styles.avText, { color: theme.onSignal }]}>
+                {perfil.nombre.charAt(0)}{perfil.apellido.charAt(0)}
+              </Text>
+            </View>
+            <View style={styles.flex}>
+              <Text style={[Type.label, { color: theme.text }]}>{perfil.nombre} {perfil.apellido}</Text>
+              <View style={styles.rating}>
+                <Ionicons name="star" size={12} color={theme.textMuted} />
+                <Text style={[Type.detail, { color: theme.textMuted }]}>
+                  {perfil.calificacion.toFixed(2)} · {perfil.viajes}
+                </Text>
               </View>
             </View>
-          </TouchableOpacity>
-        </View>
+          </View>
+          <View style={styles.row}>
+            <Plate placa={perfil.placa} />
+            <View>
+              <Text style={[styles.veh, { color: theme.text }]}>{perfil.vehiculo}</Text>
+              <Text style={[Type.detail, { color: theme.textMuted }]}>{perfil.vehiculoDetalle}</Text>
+            </View>
+          </View>
+        </Pressable>
 
-        {/* Items */}
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-          {items.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.item}
-              onPress={() => {
-                onClose();
-                setTimeout(item.onPress, 250);
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={item.icono} size={20} color="#BEC2CE" style={styles.itemIcono} />
-              <Text style={styles.itemLabel}>{item.label}</Text>
-              {item.badge ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.badge}</Text>
-                </View>
-              ) : null}
-            </TouchableOpacity>
-          ))}
+        <ScrollView style={styles.flex} contentContainerStyle={styles.menu} showsVerticalScrollIndicator={false}>
+          {principales.map(fila)}
         </ScrollView>
-
-        {/* Telefono al pie */}
-        <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.md }]}>
-          <Text style={styles.footerText}>{telefono}</Text>
-        </View>
+        {salida && fila(salida)}
       </Animated.View>
-    </View>
+    </>
   );
 }
 
+
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.black,
-  },
+  flex: { flex: 1 },
   drawer: {
     position: 'absolute',
-    left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: Colors.white,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
+    left: 0,
+    width: '84%',
+    maxWidth: 360,
+    paddingHorizontal: 14,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 8, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 30,
     elevation: 16,
   },
-  header: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  avatarCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarLetra: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize['2xl'],
-    color: Colors.primary,
-  },
-  perfilRow: { flex: 1 },
-  headerNombre: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.md,
-    color: Colors.white,
-  },
-  perfilLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    marginTop: 2,
-  },
-  perfilLink: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  scroll: { flex: 1 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2, paddingHorizontal: Spacing.xs },
+  logo: { width: 40, height: 40, borderRadius: 10 },
+  brandText: { fontFamily: FontFamily.bold, fontSize: 17, letterSpacing: -0.2 },
+  prof: { padding: Spacing.md, borderRadius: BorderRadius.lg, gap: Spacing.sm + 2 },
+  pressed: { opacity: 0.7 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
+  av: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  avText: { fontFamily: FontFamily.bold, fontSize: 14 },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  veh: { fontFamily: FontFamily.semibold, fontSize: 13.5 },
+  menu: { paddingBottom: Spacing.sm },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md + 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.divider,
-  },
-  itemIcono: { marginRight: Spacing.lg },
-  itemLabel: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.md,
-    color: Colors.textPrimary,
-  },
-  badge: {
-    backgroundColor: Colors.black,
-    borderRadius: BorderRadius.sm,
+    gap: 14,
+    minHeight: Hit.min,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    borderRadius: BorderRadius.md,
   },
-  badgeText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.white,
-  },
-  footer: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.divider,
-  },
-  footerText: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-  },
+  itemLabel: { flex: 1, fontFamily: FontFamily.medium, fontSize: 15 },
+  badge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: BorderRadius.full },
 });

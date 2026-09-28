@@ -1,170 +1,99 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { AppHeader } from '@shared/components/ui/AppHeader';
-import { Colors } from '@theme/colors';
-import { FontFamily, FontSize } from '@theme/fonts';
-import { Spacing, BorderRadius, Shadow } from '@theme/spacing';
+import { AppHeader, AppSectionTitle, AvatarPasajero } from '@shared/components/ui';
+import { haceTiempo, pluralViajes } from '@shared/utils/format';
+import { useAppTheme } from '@theme/useAppTheme';
+import { FontFamily, Type } from '@theme/fonts';
+import { Spacing } from '@theme/spacing';
+import { mockConductor } from '../data/mockConductor';
+import { mockCalificaciones } from '../data/mockExperiencia';
 
-interface Calificacion {
-  id: string;
-  nombre: string;
-  puntaje: number;
-  viajes: number;
-  comentario?: string;
-}
-
-const MOCK_CALIFICACIONES: Calificacion[] = [
-  { id: '1', nombre: 'Ana Torres',    puntaje: 5, viajes: 12, comentario: 'Excelente conductor, muy puntual.' },
-  { id: '2', nombre: 'Luis Garcia',   puntaje: 4, viajes: 3 },
-  { id: '3', nombre: 'Maria Flores',  puntaje: 5, viajes: 7,  comentario: 'Muy amable y el auto impecable.' },
-  { id: '4', nombre: 'Carlos Rojas',  puntaje: 4, viajes: 20 },
-];
-
-function EstrellasFijas({ puntaje }: { puntaje: number }) {
+function Estrellas({ n }: { n: number }) {
+  const theme = useAppTheme();
   return (
-    <View style={styles.estrellas}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Ionicons
-          key={i}
-          name={i < puntaje ? 'star' : 'star-outline'}
-          size={13}
-          color={i < puntaje ? Colors.warning : Colors.textDisabled}
-        />
+    <View style={styles.stars} accessible accessibilityLabel={`${n} de 5 estrellas`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Ionicons key={i} name={i <= n ? 'star' : 'star-outline'} size={12} color={i <= n ? theme.text : theme.divider} />
       ))}
     </View>
   );
 }
 
-function CalificacionItem({ item }: { item: Calificacion }) {
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardAvatar}>
-        <Ionicons name="person" size={18} color={Colors.textSecondary} />
-      </View>
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardNombre}>{item.nombre}</Text>
-        <EstrellasFijas puntaje={item.puntaje} />
-        {item.comentario ? (
-          <Text style={styles.cardComentario} numberOfLines={2}>
-            "{item.comentario}"
-          </Text>
-        ) : null}
-      </View>
-      <Text style={styles.cardViajes}>{item.viajes} viajes</Text>
-    </View>
-  );
-}
-
 export function ExperienciaScreen() {
-  const promedio =
-    MOCK_CALIFICACIONES.reduce((acc, r) => acc + r.puntaje, 0) / (MOCK_CALIFICACIONES.length || 1);
+  const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+  const c = mockConductor;
+  const ahora = Date.now();
+
+  const kpis = [
+    { valor: `${c.aceptacion} %`, label: 'aceptación' },
+    { valor: `${c.cancelacion.toFixed(1)} %`, label: 'cancelación' },
+    { valor: pluralViajes(c.totalViajes), label: 'en total' },
+  ];
 
   return (
-    <View style={styles.container}>
-      <AppHeader title="Mi experiencia" />
-      <View style={styles.resumen}>
-        <Text style={styles.resumenLabel}>Calificacion promedio</Text>
-        <View style={styles.resumenPuntaje}>
-          <Ionicons name="star" size={28} color={Colors.warning} />
-          <Text style={styles.resumenNumero}>{promedio.toFixed(1)}</Text>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
+      <AppHeader title="Experiencia" />
+      <ScrollView contentContainerStyle={[styles.pad, { paddingBottom: insets.bottom + Spacing['2xl'] }]}>
+        <View accessible accessibilityLabel={`Tu calificación es ${c.calificacion.toFixed(2)} de 5`}>
+          <Text style={[styles.k, { color: theme.textMuted }]}>Tu calificación</Text>
+          <View style={styles.heroRow}>
+            <Text style={[Type.hero, { color: theme.text }]}>{c.calificacion.toFixed(2)}</Text>
+            <Ionicons name="star" size={28} color={theme.starFill} />
+          </View>
         </View>
-        <Text style={styles.resumenTotal}>{MOCK_CALIFICACIONES.length} calificaciones</Text>
-      </View>
 
-      <FlatList
-        data={MOCK_CALIFICACIONES}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.lista}
-        ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
-        renderItem={({ item }) => <CalificacionItem item={item} />}
-        ListHeaderComponent={
-          <Text style={styles.listaHeader}>Ultimas calificaciones</Text>
-        }
-      />
+        <View style={[styles.kpis, { borderColor: theme.divider }]}>
+          {kpis.map((k, i) => (
+            <View
+              key={k.label}
+              style={[styles.kpi, i > 0 && [styles.kpiSep, { borderLeftColor: theme.divider }]]}
+              accessible
+              accessibilityLabel={`${k.valor} ${k.label}`}
+            >
+              <Text style={[styles.kpiVal, { color: theme.text }]} numberOfLines={1} adjustsFontSizeToFit>{k.valor}</Text>
+              <Text style={[styles.kpiLbl, { color: theme.textMuted }]}>{k.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View>
+          <AppSectionTitle>Últimas calificaciones</AppSectionTitle>
+          {mockCalificaciones.map((r) => (
+            <View key={r.id} style={[styles.row, { borderBottomColor: theme.divider }]}>
+              <AvatarPasajero nombre={r.nombre} apellido={r.apellido} size={36} />
+              <View style={[styles.flex, styles.gap2]}>
+                <View style={styles.rowTop}>
+                  <Text style={[Type.label, { color: theme.text }]}>{r.nombre} {r.apellido.charAt(0)}.</Text>
+                  <Text style={[Type.caption, { color: theme.textMuted }]}>{haceTiempo(ahora - r.haceMs, ahora)}</Text>
+                </View>
+                <Estrellas n={r.puntaje} />
+                {r.comentario ? (
+                  <Text style={[Type.detail, { color: theme.text }]}>{r.comentario}</Text>
+                ) : null}
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.backgroundLight },
-  resumen: {
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    paddingVertical: Spacing['3xl'],
-    ...Shadow.sm,
-  },
-  resumenLabel: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-  },
-  resumenPuntaje: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  resumenNumero: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize['4xl'],
-    color: Colors.primary,
-  },
-  resumenTotal: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: Spacing.sm,
-  },
-  lista: {
-    padding: Spacing.lg,
-  },
-  listaHeader: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: Spacing.md,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-    ...Shadow.sm,
-  },
-  cardAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#eef2f7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardInfo: { flex: 1 },
-  cardNombre: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-    marginBottom: 3,
-  },
-  estrellas: {
-    flexDirection: 'row',
-    gap: 2,
-    marginBottom: 4,
-  },
-  cardComentario: {
-    fontFamily: FontFamily.italic,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-  cardViajes: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-  },
+  flex: { flex: 1 },
+  gap2: { gap: 3 },
+  pad: { paddingHorizontal: 18, paddingTop: Spacing.xs, gap: Spacing.lg },
+  k: { fontFamily: FontFamily.semibold, fontSize: 13 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  kpis: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1 },
+  kpi: { flex: 1, paddingVertical: Spacing.sm + 2, paddingRight: 6 },
+  kpiSep: { paddingLeft: Spacing.sm + 2, borderLeftWidth: 1 },
+  kpiVal: { fontFamily: FontFamily.bold, fontSize: 17, lineHeight: 22 },
+  kpiLbl: { fontFamily: FontFamily.regular, fontSize: 11.5, lineHeight: 15 },
+  stars: { flexDirection: 'row', gap: 2 },
+  row: { flexDirection: 'row', gap: Spacing.md, paddingVertical: Spacing.md, borderBottomWidth: 1 },
+  rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.sm },
 });

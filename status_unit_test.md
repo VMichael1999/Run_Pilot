@@ -21,7 +21,6 @@
 | IngresosScreen + BilleteraScreen | src/features/conductor/ingresos/__tests__/IngresosScreen.test.tsx | 5 tests, en verde |
 | resumen de ingresos (hoy, semana, mes) | src/features/conductor/ingresos/__tests__/resumen.test.ts | 4 tests, en verde |
 | fecha (hoy/ayer, semana, mes, título de día) | src/shared/utils/__tests__/fecha.test.ts | 5 tests, en verde |
-| ExperienciaScreen | pendiente | sin tests |
-| CuentaScreen | pendiente | sin tests |
+| Cuenta, Configuración, Vehículo, Experiencia, menú lateral | src/features/conductor/cuenta/__tests__/CuentaYMenu.test.tsx | 7 tests, en verde |
 
 > Actualizar este archivo cada vez que se agregen o completen tests.
