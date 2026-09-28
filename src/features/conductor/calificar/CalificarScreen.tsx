@@ -62,7 +62,10 @@ export function CalificarScreen({ route, navigation }: Props) {
   // Vuelve a donde se abrio: al inicio si viene del viaje (Viaje se reemplazo
   // por esta pantalla), al historial si se califico despues
   const volver = () => {
-    if (!estadoViaje && solicitudStore?.id === solicitudId) setSolicitudActual(null);
+    // Recien terminado: el viaje del historial guarda la misma solicitud que el store
+    const esElDelStore = solicitudStore != null &&
+      (solicitudStore.id === solicitudId || delHistorial?.solicitud.id === solicitudStore.id);
+    if (!estadoViaje && esElDelStore) setSolicitudActual(null);
     if (navigation.canGoBack()) navigation.goBack();
     else navigation.reset({ index: 0, routes: [{ name: 'ConductorHome' }] });
   };

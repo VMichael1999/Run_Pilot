@@ -168,8 +168,8 @@ export function ViajeScreen({ route, navigation }: Props) {
 
   const handleAvanzar = () => avanzarEstado();
   const handleFinalizar = () => {
-    finalizarViaje();
-    navigation.replace('Calificar', { solicitudId: solicitud.id });
+    const viajeId = finalizarViaje();
+    navigation.replace('Calificar', { solicitudId: viajeId ?? solicitud.id });
   };
   const handleCancelar = (motivo: MotivoCancelacion) => {
     setCancelando(false);

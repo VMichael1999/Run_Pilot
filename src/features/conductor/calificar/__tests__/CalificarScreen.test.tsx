@@ -16,18 +16,20 @@ jest.mock('expo-haptics', () => ({
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(), setItemAsync: jest.fn() }));
 
 const solicitud = mockSolicitudes[0];
+// Como lo guarda finalizarViaje: id del viaje distinto al de la solicitud
+const viajeId = `${solicitud.id}-1790600000000`;
 const navigation = { reset: jest.fn(), goBack: jest.fn(), canGoBack: jest.fn(() => true) };
 
 function renderScreen(conSolicitudActual = true) {
   useConductorStore.setState({
     estadoViaje: null,
     solicitudActual: conSolicitudActual ? solicitud : null,
-    historial: [{ id: solicitud.id, fechaMs: Date.now(), solicitud, calificacion: 0 }],
+    historial: [{ id: viajeId, fechaMs: Date.now(), solicitud, calificacion: 0 }],
   });
   render(
     <CalificarScreen
       navigation={navigation as never}
-      route={{ key: 'c', name: 'Calificar', params: { solicitudId: solicitud.id } }}
+      route={{ key: 'c', name: 'Calificar', params: { solicitudId: viajeId } }}
     />,
   );
 }
