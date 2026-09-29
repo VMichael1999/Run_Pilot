@@ -32,11 +32,21 @@ class BurbujaServicio : Service() {
       } else {
         startForeground(ID_NOTIFICACION, notificacion)
       }
+      enPrimerPlano = true
     } catch (e: Exception) {
       Log.w(BurbujaManager.TAG, "No se pudo pasar a primer plano", e)
-      stopSelf()
     }
+    iniciando = false
+    // Si la burbuja se oculto mientras el servicio arrancaba, se detiene recien ahora:
+    // detenerlo antes de startForeground cierra la app en varias versiones de Android.
+    if (!enPrimerPlano || !BurbujaManager.visible) stopSelf()
     return START_NOT_STICKY
+  }
+
+  override fun onDestroy() {
+    enPrimerPlano = false
+    iniciando = false
+    super.onDestroy()
   }
 
   /** Si el conductor cierra la app desde recientes, la burbuja se va con ella. */
@@ -69,7 +79,8 @@ class BurbujaServicio : Service() {
     return builder
       .setContentTitle(titulo)
       .setContentText(texto)
-      .setSmallIcon(applicationInfo.icon)
+      // Vector monocromo: el icono de la app en color se ve como una mancha en la barra de estado
+      .setSmallIcon(R.drawable.burbuja_notificacion)
       .setOngoing(true)
       .setCategory(Notification.CATEGORY_SERVICE)
       .setContentIntent(abrir)
@@ -82,21 +93,30 @@ class BurbujaServicio : Service() {
     private const val EXTRA_TITULO = "titulo"
     private const val EXTRA_TEXTO = "texto"
 
+    // Solo se tocan en el hilo principal (iniciar/detener/onStartCommand)
+    private var iniciando = false
+    private var enPrimerPlano = false
+
     fun iniciar(ctx: Context, opciones: BurbujaOpciones) {
       val intent = Intent(ctx, BurbujaServicio::class.java)
         .putExtra(EXTRA_TITULO, opciones.tituloNotificacion)
         .putExtra(EXTRA_TEXTO, opciones.textoNotificacion)
+      if (iniciando || enPrimerPlano) return
       try {
+        iniciando = true
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(intent)
         else ctx.startService(intent)
       } catch (e: Exception) {
         // p. ej. ForegroundServiceStartNotAllowedException: la burbuja sigue sin servicio
+        iniciando = false
         Log.w(BurbujaManager.TAG, "No se pudo iniciar el servicio", e)
       }
     }
 
     fun detener(ctx: Context) {
-      ctx.stopService(Intent(ctx, BurbujaServicio::class.java))
+      // Aun arrancando: onStartCommand vera la burbuja oculta y se detendra solo
+      if (iniciando) return
+      if (enPrimerPlano) ctx.stopService(Intent(ctx, BurbujaServicio::class.java))
     }
   }
 }
