@@ -3,8 +3,8 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { act, render } from '@testing-library/react-native';
 import { useConductorStore } from '@store/useConductorStore';
 import { mockSolicitudes } from '../../data/mockSolicitudes';
-import { useBurbujaViaje } from '../useBurbujaViaje';
-import { OPCIONES_BURBUJA } from '../reglas';
+import { useBurbujaConductor } from '../useBurbujaConductor';
+import { opcionesBurbuja } from '../reglas';
 
 const mockBurbuja = {
   disponible: true,
@@ -25,7 +25,7 @@ jest.spyOn(AppState, 'addEventListener').mockImplementation((_tipo, cb) => {
 });
 
 function Prueba() {
-  useBurbujaViaje();
+  useBurbujaConductor();
   return null;
 }
 const cambiar = (s: AppStateStatus) => act(() => { oyente?.(s); });
@@ -33,20 +33,29 @@ const cambiar = (s: AppStateStatus) => act(() => { oyente?.(s); });
 beforeEach(() => {
   jest.clearAllMocks();
   mockBurbuja.tienePermiso.mockReturnValue(true);
-  useConductorStore.setState({ solicitudActual: null, estadoViaje: null });
+  useConductorStore.setState({ isOnline: false, solicitudActual: null, estadoViaje: null });
 });
 
-describe('useBurbujaViaje', () => {
+describe('useBurbujaConductor', () => {
   it('con viaje en curso: aparece al salir de la app y se va al volver', () => {
-    useConductorStore.setState({ solicitudActual: mockSolicitudes[0], estadoViaje: 'en_camino' });
+    useConductorStore.setState({ isOnline: true, solicitudActual: mockSolicitudes[0], estadoViaje: 'en_camino' });
     render(<Prueba />);
     cambiar('background');
-    expect(mockBurbuja.mostrar).toHaveBeenCalledWith(OPCIONES_BURBUJA);
+    expect(mockBurbuja.mostrar).toHaveBeenCalledWith(opcionesBurbuja(true));
+    expect(opcionesBurbuja(true).tituloNotificacion).toBe('Viaje en curso');
     cambiar('active');
     expect(mockBurbuja.ocultar).toHaveBeenCalled();
   });
 
-  it('sin viaje en curso no aparece', () => {
+  it('conectado sin viaje tambien aparece, avisando que busca viajes', () => {
+    useConductorStore.setState({ isOnline: true });
+    render(<Prueba />);
+    cambiar('background');
+    expect(mockBurbuja.mostrar).toHaveBeenCalledWith(opcionesBurbuja(false));
+    expect(opcionesBurbuja(false).tituloNotificacion).toBe('Conectado · buscando viajes');
+  });
+
+  it('desconectado y sin viaje no aparece', () => {
     render(<Prueba />);
     cambiar('background');
     expect(mockBurbuja.mostrar).not.toHaveBeenCalled();
@@ -67,11 +76,11 @@ describe('useBurbujaViaje', () => {
     expect(mockBurbuja.mostrar).toHaveBeenCalledTimes(1);
   });
 
-  it('si el viaje termina, se oculta; al desmontar (cerrar sesion) tambien', () => {
-    useConductorStore.setState({ solicitudActual: mockSolicitudes[0], estadoViaje: 'llegado' });
+  it('al desconectarse sin viaje se oculta; al desmontar (cerrar sesion) tambien', () => {
+    useConductorStore.setState({ isOnline: true });
     const { unmount } = render(<Prueba />);
     mockBurbuja.ocultar.mockClear();
-    act(() => { useConductorStore.setState({ estadoViaje: null }); });
+    act(() => { useConductorStore.setState({ isOnline: false }); });
     expect(mockBurbuja.ocultar).toHaveBeenCalledTimes(1);
     unmount();
     expect(remove).toHaveBeenCalled();

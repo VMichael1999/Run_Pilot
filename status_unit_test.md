@@ -30,11 +30,14 @@
 | Recargar + Retirar (monto por defecto, logos, validación, opciones, resultado) | src/features/conductor/billetera/__tests__/RecargarRetirar.test.tsx | 12 tests, en verde |
 | RoutePolyline + useMapStyle (colores de ruta, bug iOS, mapa noche) | src/shared/components/map/__tests__/RoutePolyline.test.tsx | 5 tests, en verde |
 | Burbuja flotante: reglas (cuándo mostrar/ocultar, viaje en curso) | src/features/conductor/burbuja/__tests__/reglas.test.ts | 7 tests, en verde |
-| Burbuja flotante: useBurbujaViaje (segundo plano, volver, sin permiso, fin del viaje) | src/features/conductor/burbuja/__tests__/useBurbujaViaje.test.tsx | 5 tests, en verde |
+| Burbuja flotante: useBurbujaConductor (conectado o en viaje, volver, sin permiso, desconectarse) | src/features/conductor/burbuja/__tests__/useBurbujaConductor.test.tsx | 6 tests, en verde |
+| Avisos de solicitudes: reglas (notificar/abrir) y texto | src/features/conductor/avisos/__tests__/reglas.test.ts | 6 tests, en verde |
+| Avisos de solicitudes: useAvisoSolicitudes (notificar, abrir, quitar aviso, tocar, volver) | src/features/conductor/avisos/__tests__/useAvisoSolicitudes.test.tsx | 8 tests, en verde |
+| Preferencias (switches guardados) | src/store/__tests__/usePreferenciasStore.test.ts | 4 tests, en verde |
 | Burbuja flotante: pantalla del permiso (pasos, Ajustes, activada) | src/features/conductor/burbuja/__tests__/PermisoBurbujaScreen.test.tsx | 4 tests, en verde |
 | Burbuja flotante: inicio la ofrece una sola vez | src/features/conductor/home/__tests__/ConductorHomeBurbuja.test.tsx | 4 tests, en verde |
-| Burbuja flotante: fila en Configuración | src/features/conductor/configuracion/__tests__/ConfiguracionBurbuja.test.tsx | 3 tests, en verde |
-| Burbuja flotante: código nativo (Kotlin, Robolectric: permiso, overlay, no sale sobre la app, tocar, arrastrar, X, borde, servicio) | modules/burbuja-flotante/android/src/test/.../BurbujaRoboTest.kt | 10 tests, en verde (Robolectric 4.14.1, Android 15); sin probar en dispositivo |
+| Configuración: burbuja, "Nuevas solicitudes" y "Abrir Run Pilot al recibir un viaje" | src/features/conductor/configuracion/__tests__/ConfiguracionBurbuja.test.tsx | 7 tests, en verde |
+| Burbuja flotante: código nativo (Kotlin, Robolectric: permiso, overlay, no sale sobre la app, tocar, arrastrar, X, borde, servicio) | modules/burbuja-flotante/android/src/test/.../BurbujaRoboTest.kt | 12 tests, en verde (Robolectric 4.14.1, Android 15); sin probar en dispositivo |
 | Catálogo de componentes (solo desarrollo) | src/features/dev/__tests__/CatalogoScreen.test.tsx | 1 test (render), en verde |
 
 > Actualizar este archivo cada vez que se agregen o completen tests.

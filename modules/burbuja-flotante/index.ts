@@ -33,6 +33,7 @@ declare class BurbujaFlotanteNativo extends NativeModule<Eventos> {
   abrirAjustesPermiso(): void;
   mostrar(opciones: OpcionesBurbuja): boolean;
   ocultar(): void;
+  abrirApp(): boolean;
   estaVisible(): boolean;
 }
 
@@ -63,6 +64,12 @@ export const BurbujaFlotante = {
   ocultar: (): void => nativo?.ocultar(),
 
   estaVisible: (): boolean => nativo?.estaVisible() ?? false,
+
+  /**
+   * Trae la app al frente desde segundo plano (p. ej. al llegar una solicitud).
+   * Requiere el mismo permiso que la burbuja. @returns false si no se pudo.
+   */
+  abrirApp: (): boolean => nativo?.abrirApp() ?? false,
 
   alTocar: (cb: () => void) => nativo?.addListener('onTocar', cb) ?? sinSuscripcion,
 

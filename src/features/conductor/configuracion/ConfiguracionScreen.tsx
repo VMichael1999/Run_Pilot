@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { Type } from '@theme/fonts';
 import { BorderRadius, Hit, Spacing } from '@theme/spacing';
 import appConfig from '../../../../app.json';
 import { usePermisoBurbuja } from '../burbuja/permiso';
+import { usePreferenciasStore } from '@store/usePreferenciasStore';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Configuracion'>;
 
@@ -26,9 +27,13 @@ export function ConfiguracionScreen({ navigation }: Props) {
   const theme = useAppTheme();
   const preference = useThemeStore((s) => s.preference);
   const setPreference = useThemeStore((s) => s.setPreference);
-  // Aun no se guarda en ningun lado: no hay backend de notificaciones
-  const [avisos, setAvisos] = useState(true);
+  const avisos = usePreferenciasStore((s) => s.avisosSolicitudes);
+  const setAvisos = usePreferenciasStore((s) => s.setAvisosSolicitudes);
+  const abrirAlRecibir = usePreferenciasStore((s) => s.abrirAlRecibir);
+  const setAbrirAlRecibir = usePreferenciasStore((s) => s.setAbrirAlRecibir);
   const burbuja = usePermisoBurbuja();
+  // Abrir la app desde otra app usa el mismo permiso que la burbuja
+  const abrirActivo = abrirAlRecibir && burbuja.permiso;
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.background }]}>
@@ -62,16 +67,49 @@ export function ConfiguracionScreen({ navigation }: Props) {
                 thumbColor={Palette.white}
               />
             </View>
+
+            {burbuja.disponible && (
+              <>
+                <View style={[styles.sep, { backgroundColor: theme.divider }]} />
+                <Pressable
+                  // Sin permiso, tocar la fila lleva a concederlo
+                  disabled={burbuja.permiso}
+                  onPress={() => navigation.navigate('PermisoBurbuja')}
+                  accessible={!burbuja.permiso}
+                  accessibilityRole={burbuja.permiso ? undefined : 'button'}
+                  accessibilityLabel={burbuja.permiso ? undefined : 'Abrir Run Pilot al recibir un viaje: falta el permiso. Toca para activarlo'}
+                  style={styles.fila}
+                >
+                  <View style={styles.flex}>
+                    <Text style={[Type.label, { color: theme.text }]}>Abrir Run Pilot al recibir un viaje</Text>
+                    <Text style={[Type.caption, { color: theme.textMuted }]}>
+                      {!burbuja.permiso
+                        ? 'Falta el permiso "Mostrar sobre otras apps". Toca para activarlo.'
+                        : abrirAlRecibir
+                          ? 'Si estás en otra app, Run Pilot se abre solo con la solicitud.'
+                          : 'Si estás en otra app, solo te llega la notificación.'}
+                    </Text>
+                  </View>
+                  <Switch
+                    accessibilityLabel="Abrir Run Pilot al recibir un viaje"
+                    value={abrirActivo}
+                    disabled={!burbuja.permiso}
+                    onValueChange={setAbrirAlRecibir}
+                    trackColor={{ false: theme.divider, true: theme.online }}
+                    thumbColor={Palette.white}
+                  />
+                </Pressable>
+              </>
+            )}
           </View>
         </View>
 
-
         {burbuja.disponible && (
           <View>
-            <AppSectionTitle>Viaje</AppSectionTitle>
+            <AppSectionTitle>Mientras estás conectado</AppSectionTitle>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Burbuja para volver al viaje, ${burbuja.permiso ? 'activada' : 'desactivada'}`}
+              accessibilityLabel={`Burbuja de acceso directo, ${burbuja.permiso ? 'activada' : 'desactivada'}`}
               onPress={() => navigation.navigate('PermisoBurbuja')}
               style={({ pressed }) => [
                 styles.group,
@@ -81,10 +119,10 @@ export function ConfiguracionScreen({ navigation }: Props) {
             >
               <View style={styles.fila}>
                 <View style={styles.flex}>
-                  <Text style={[Type.label, { color: theme.text }]}>Burbuja para volver al viaje</Text>
+                  <Text style={[Type.label, { color: theme.text }]}>Burbuja de acceso directo</Text>
                   <Text style={[Type.caption, { color: theme.textMuted }]}>
                     {burbuja.permiso
-                      ? 'Activada: aparece al salir de la app durante un viaje'
+                      ? 'Activada: aparece al salir de la app mientras estás conectado'
                       : 'Desactivada: falta el permiso para mostrarse sobre otras apps'}
                   </Text>
                 </View>
@@ -115,6 +153,7 @@ const styles = StyleSheet.create({
   hint: { marginTop: Spacing.sm },
   group: { borderRadius: BorderRadius.lg, borderWidth: 1 },
   pressed: { opacity: 0.7 },
+  sep: { height: 1, marginHorizontal: 14 },
   fila: {
     flexDirection: 'row',
     alignItems: 'center',

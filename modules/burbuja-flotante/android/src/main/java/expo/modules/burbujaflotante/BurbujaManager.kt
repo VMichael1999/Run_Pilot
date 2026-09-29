@@ -128,14 +128,22 @@ object BurbujaManager {
     oyente?.alCerrar()
   }
 
-  /** Trae la app al frente como lo haria el lanzador (misma tarea, mismo estado). */
-  internal fun abrirApp(app: Context) {
-    val intent = app.packageManager.getLaunchIntentForPackage(app.packageName) ?: return
+  /**
+   * Trae la app al frente como lo haria el lanzador (misma tarea, mismo estado).
+   * Desde segundo plano Android solo lo permite con el permiso "Mostrar sobre otras apps".
+   * @return false si falta el permiso o Android no lo permitio.
+   */
+  fun abrirApp(ctx: Context): Boolean {
+    val app = ctx.applicationContext
+    if (!tienePermiso(app)) return false
+    val intent = app.packageManager.getLaunchIntentForPackage(app.packageName) ?: return false
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-    try {
+    return try {
       app.startActivity(intent)
+      true
     } catch (e: Exception) {
       Log.w(TAG, "No se pudo abrir la app", e)
+      false
     }
   }
 }

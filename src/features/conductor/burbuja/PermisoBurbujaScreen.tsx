@@ -53,11 +53,15 @@ export function PermisoBurbujaScreen({ navigation }: Props) {
 
         <View style={styles.textos}>
           <Text accessibilityRole="header" style={[Type.title, { color: theme.text }]}>
-            Vuelve a tu viaje con un toque
+            No te pierdas ningún viaje
           </Text>
           <Text style={[Type.body, { color: theme.textMuted }]}>
-            Durante un viaje, si abres otra app como Waze, Google Maps o WhatsApp, verás una burbuja de Run Pilot.
-            Tócala para volver al viaje. Al volver, la burbuja desaparece sola.
+            Mientras estés conectado, si abres otra app como Waze, Google Maps o WhatsApp, verás una burbuja de
+            Run Pilot: tócala para volver. Y si llega una solicitud, Run Pilot se abre solo para que la aceptes.
+          </Text>
+          <Text style={[Type.caption, { color: theme.textMuted }]}>
+            En algunos teléfonos (por ejemplo Xiaomi) también debes activar "Mostrar ventanas emergentes en segundo
+            plano" en los permisos de Run Pilot.
           </Text>
         </View>
 
@@ -67,7 +71,7 @@ export function PermisoBurbujaScreen({ navigation }: Props) {
             <View style={styles.flex}>
               <Text style={[Type.label, { color: theme.text }]}>Burbuja activada</Text>
               <Text style={[Type.caption, { color: theme.textMuted }]}>
-                Aparecerá solo mientras tengas un viaje en curso.
+                Aparecerá al salir de la app mientras estés conectado.
               </Text>
             </View>
           </View>

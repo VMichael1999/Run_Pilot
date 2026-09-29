@@ -47,6 +47,13 @@
           "locationWhenInUsePermission": "Run Pilot necesita tu ubicacion para mostrar tu posicion en el mapa.",
           "locationAlwaysAndWhenInUsePermission": "Run Pilot necesita tu ubicacion para el servicio de conductor."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#111519"
+        }
       ]
     ]
   }

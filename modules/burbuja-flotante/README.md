@@ -10,23 +10,29 @@ iOS no permite dibujar sobre otras apps: en iOS, web y **Expo Go** el módulo no
 
 ```
 Instala e inicia sesión
-  └─ Inicio (Android, primera vez): tras el permiso de ubicación → pantalla "Vuelve a tu viaje con un toque"
-       ├─ "Activar burbuja" → Ajustes del sistema "Mostrar sobre otras apps" → vuelve → "Burbuja activada"
-       └─ "Ahora no" → no se vuelve a ofrecer sola (queda en Configuración › Viaje)
+  └─ Inicio (Android, primera vez): tras el permiso de ubicación → "No te pierdas ningún viaje"
+       ├─ "Activar burbuja" → Ajustes "Mostrar sobre otras apps" → vuelve → "Burbuja activada"
+       └─ "Ahora no" → no se vuelve a ofrecer sola (queda en Configuración)
 
-Viaje en curso (aceptado → … → cobrar)
-  ├─ La app pasa a segundo plano (Waze, Maps, WhatsApp, llamada…) → aparece la burbuja
-  │    + notificación "Viaje en curso · Toca para volver a Run Pilot"
-  ├─ Tocar la burbuja → abre Run Pilot en el mismo punto del viaje → la burbuja se va
-  ├─ Arrastrarla → aparece una X abajo; soltarla encima → se cierra hasta la próxima salida
-  └─ Volver a la app por cualquier otro camino → la burbuja se va
+Conectarme → se pide el permiso de notificaciones (Android 13+ / iOS)
 
-Sin viaje en curso, o sin permiso → nunca aparece
-Viaje finalizado o cancelado → se oculta
-Cerrar la app desde recientes → se oculta
+Conectado (con o sin viaje) y sales a otra app (Waze, Maps, WhatsApp…)
+  ├─ Aparece la burbuja + notificación fija "Conectado · buscando viajes" o "Viaje en curso"
+  ├─ Tocar la burbuja → vuelves a Run Pilot → la burbuja se va
+  └─ Arrastrarla a la X → se cierra hasta la próxima salida
+
+Llega una solicitud estando en otra app
+  ├─ Notificación con sonido "Nueva solicitud de viaje · S/ 18.50 · Efectivo · Carlos"   (switch "Nuevas solicitudes")
+  ├─ Android: Run Pilot se abre solo en la solicitud   (switch "Abrir Run Pilot al recibir un viaje" + permiso de la burbuja)
+  ├─ Tocar la notificación → Run Pilot en la solicitud
+  └─ Aceptada, rechazada o expirada → la notificación se quita
+
+Desconectarme → la burbuja no vuelve a aparecer
 ```
 
-La regla está en `src/features/conductor/burbuja/reglas.ts` (`accionBurbuja`) y se aplica en `useBurbujaViaje`, montado en `ConductorNavigator`.
+Las reglas están en `src/features/conductor/burbuja/reglas.ts` (`accionBurbuja`) y `src/features/conductor/avisos/reglas.ts` (`reaccionSolicitud`).
+
+**Límite actual:** las solicitudes las simula la propia app. En Android llegan en segundo plano porque el servicio mantiene viva la app. En iOS la app se suspende en segundo plano, así que hace falta un servidor que envíe push (APNs/FCM). Cuando exista, el push debe llamar a la misma lógica.
 
 ## API (JS)
 
@@ -39,6 +45,7 @@ BurbujaFlotante.abrirAjustesPermiso(); // abre esa pantalla del sistema
 BurbujaFlotante.mostrar({ tamano: 60, tituloNotificacion: 'Viaje en curso' }); // false sin permiso
 BurbujaFlotante.ocultar();
 BurbujaFlotante.estaVisible();
+BurbujaFlotante.abrirApp();             // trae la app al frente desde segundo plano (mismo permiso)
 const sub = BurbujaFlotante.alTocar(() => {});   // también alCerrar(); sub.remove()
 ```
 
@@ -57,7 +64,7 @@ const sub = BurbujaFlotante.alTocar(() => {});   // también alCerrar(); sub.rem
 | Archivo | Qué hace |
 |---|---|
 | `BurbujaFlotanteModule.kt` | Puente con JS (funciones y eventos `onTocar`, `onCerrar`) |
-| `BurbujaManager.kt` | Mostrar/ocultar desde cualquier hilo; abre la app al tocar |
+| `BurbujaManager.kt` | Mostrar/ocultar desde cualquier hilo; `abrirApp` (al tocar o al llegar un viaje) |
 | `BurbujaVista.kt` | Ventanas superpuestas: burbuja, gestos, pegar al borde, X de cierre |
 | `BurbujaServicio.kt` | Servicio en primer plano (`specialUse`) con la notificación |
 | `AndroidManifest.xml` | Permisos y servicio; se fusiona solo en la app |

@@ -11,17 +11,20 @@ export type AccionBurbuja = 'mostrar' | 'ocultar' | null;
 /**
  * Que hacer con la burbuja cuando la app cambia de estado:
  * - vuelve al frente: ocultar (siempre)
- * - pasa a segundo plano con un viaje en curso y permiso: mostrar
+ * - pasa a segundo plano estando conectado (o con un viaje en curso) y con permiso: mostrar
  * - cualquier otro caso: nada
  */
-export function accionBurbuja(estadoApp: AppStateStatus, viajeEnCurso: boolean, permiso: boolean): AccionBurbuja {
+export function accionBurbuja(estadoApp: AppStateStatus, activo: boolean, permiso: boolean): AccionBurbuja {
   if (estadoApp === 'active') return 'ocultar';
-  if (estadoApp === 'background' && viajeEnCurso && permiso) return 'mostrar';
+  if (estadoApp === 'background' && activo && permiso) return 'mostrar';
   return null;
 }
 
-export const OPCIONES_BURBUJA: OpcionesBurbuja = {
-  tamano: 60,
-  tituloNotificacion: 'Viaje en curso',
-  textoNotificacion: 'Toca para volver a Run Pilot',
-};
+/** La notificacion del servicio dice en que esta el conductor. */
+export function opcionesBurbuja(viajeEnCurso: boolean): OpcionesBurbuja {
+  return {
+    tamano: 60,
+    tituloNotificacion: viajeEnCurso ? 'Viaje en curso' : 'Conectado · buscando viajes',
+    textoNotificacion: 'Toca para volver a Run Pilot',
+  };
+}
