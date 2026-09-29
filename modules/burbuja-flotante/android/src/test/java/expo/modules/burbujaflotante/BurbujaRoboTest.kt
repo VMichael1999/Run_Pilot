@@ -217,4 +217,19 @@ class BurbujaRoboTest {
     assertNotNull("primero startForeground", shadowOf(servicio).lastForegroundNotification)
     assertTrue("y luego se detiene", shadowOf(servicio).isStoppedBySelf)
   }
+
+  @Test
+  fun abrirAppConPermisoTraeLaAppAlFrente() {
+    assertTrue(BurbujaManager.abrirApp(app))
+    val abierta = shadowOf(app).nextStartedActivity
+    assertEquals("MainActivity", abierta.component?.className)
+    assertTrue(abierta.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
+  }
+
+  @Test
+  fun abrirAppSinPermisoNoHaceNada() {
+    ShadowSettings.setCanDrawOverlays(false)
+    assertFalse(BurbujaManager.abrirApp(app))
+    assertEquals(null, shadowOf(app).nextStartedActivity)
+  }
 }

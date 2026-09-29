@@ -17,6 +17,8 @@ import { IncomingRequestOverlay } from './components/IncomingRequestOverlay';
 import { ViajeEnCursoBanner } from './components/ViajeEnCursoBanner';
 import { BurbujaFlotante } from '@modules/burbuja-flotante';
 import { marcarPermisoPreguntado, yaSePreguntoPermiso } from '../burbuja/permiso';
+import { useAvisoSolicitudes } from '../avisos/useAvisoSolicitudes';
+import { pedirPermisoNotificaciones, prepararCanal } from '../avisos/notificaciones';
 import { ViajeCanceladoAviso } from './components/ViajeCanceladoAviso';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { mockConductor } from '../data/mockConductor';
@@ -140,6 +142,9 @@ export function ConductorHomeScreen() {
     return () => { if (simTimer.current) clearTimeout(simTimer.current); };
   }, [isOnline, hayViaje]);
 
+  // En otra app: notificacion y, si el conductor lo eligio, la app se abre con la solicitud
+  useAvisoSolicitudes(solicitudActiva, () => navigation.navigate('ConductorHome'));
+
   const handleRechazarIncoming = () => {
     setSolicitudActiva(null);
     simTimer.current = setTimeout(() => {
@@ -162,6 +167,8 @@ export function ConductorHomeScreen() {
   const handleToggleOnline = () => {
     if (toggling) return;
     setToggling(true);
+    // Al conectarse: permiso para avisar solicitudes cuando este en otra app
+    if (!isOnline) void pedirPermisoNotificaciones().then((ok) => { if (ok) void prepararCanal(); });
     setTimeout(() => {
       setOnline(!isOnline);
       setToggling(false);

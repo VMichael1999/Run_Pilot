@@ -41,7 +41,7 @@ beforeEach(() => {
 describe('PermisoBurbujaScreen', () => {
   it('sin permiso explica los pasos y "Activar burbuja" abre Ajustes', () => {
     renderPantalla();
-    expect(screen.getByText('Vuelve a tu viaje con un toque')).toBeTruthy();
+    expect(screen.getByText('No te pierdas ningún viaje')).toBeTruthy();
     expect(screen.getByText('En la lista, busca Run Pilot.')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Activar burbuja' }));
     expect(mockBurbuja.abrirAjustesPermiso).toHaveBeenCalled();

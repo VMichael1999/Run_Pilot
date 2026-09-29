@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from './types';
 import { ConductorHomeScreen } from '@features/conductor/home/ConductorHomeScreen';
@@ -19,13 +19,19 @@ import { ServiciosProgramadosScreen } from '@features/conductor/servicios-progra
 import { SeleccionarVehiculoScreen } from '@features/conductor/vehiculo/SeleccionarVehiculoScreen';
 import { CatalogoScreen } from '@features/dev/CatalogoScreen';
 import { PermisoBurbujaScreen } from '@features/conductor/burbuja/PermisoBurbujaScreen';
-import { useBurbujaViaje } from '@features/conductor/burbuja/useBurbujaViaje';
+import { useBurbujaConductor } from '@features/conductor/burbuja/useBurbujaConductor';
+import { usePreferenciasStore } from '@store/usePreferenciasStore';
 
 const Stack = createNativeStackNavigator<ConductorStackParamList>();
 
 export function ConductorNavigator() {
-  // Burbuja para volver al viaje cuando la app pasa a segundo plano (Android)
-  useBurbujaViaje();
+  // Burbuja para volver a la app cuando pasa a segundo plano estando conectado (Android)
+  useBurbujaConductor();
+
+  // Switches de Configuracion guardados en el telefono
+  useEffect(() => {
+    void usePreferenciasStore.getState().cargar();
+  }, []);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

@@ -42,6 +42,10 @@ class BurbujaFlotanteModule : Module() {
       BurbujaManager.ocultar(contexto)
     }
 
+    Function("abrirApp") {
+      BurbujaManager.abrirApp(contexto)
+    }
+
     Function("estaVisible") {
       BurbujaManager.visible
     }
