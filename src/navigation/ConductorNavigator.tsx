@@ -20,6 +20,7 @@ import { SeleccionarVehiculoScreen } from '@features/conductor/vehiculo/Seleccio
 import { CatalogoScreen } from '@features/dev/CatalogoScreen';
 import { PermisoBurbujaScreen } from '@features/conductor/burbuja/PermisoBurbujaScreen';
 import { useBurbujaConductor } from '@features/conductor/burbuja/useBurbujaConductor';
+import { useMantenerActiva } from '@features/conductor/avisos/useMantenerActiva';
 import { usePreferenciasStore } from '@store/usePreferenciasStore';
 
 const Stack = createNativeStackNavigator<ConductorStackParamList>();
@@ -27,6 +28,8 @@ const Stack = createNativeStackNavigator<ConductorStackParamList>();
 export function ConductorNavigator() {
   // Burbuja para volver a la app cuando pasa a segundo plano estando conectado (Android)
   useBurbujaConductor();
+  // La app sigue viva en segundo plano para recibir solicitudes (aviso y apertura automatica)
+  useMantenerActiva();
 
   // Switches de Configuracion guardados en el telefono
   useEffect(() => {
