@@ -103,6 +103,10 @@ object BurbujaManager {
   private fun appVisible(): Boolean {
     val estado = ActivityManager.RunningAppProcessInfo()
     ActivityManager.getMyMemoryState(estado)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+        estado.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE) {
+      return false
+    }
     return estado.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
   }
 
@@ -115,6 +119,24 @@ object BurbujaManager {
       vista = null
       BurbujaServicio.detener(app)
     }
+  }
+
+  /**
+   * Mantiene la app viva en segundo plano (servicio en primer plano) sin depender de la
+   * burbuja ni de su permiso. Llamar con la app en pantalla: Android no deja iniciar un
+   * servicio en primer plano desde segundo plano.
+   */
+  fun mantenerActiva(ctx: Context, opciones: BurbujaOpciones) {
+    val app = ctx.applicationContext
+    BurbujaServicio.mantener = true
+    principal.post { BurbujaServicio.iniciar(app, opciones) }
+  }
+
+  /** Deja de mantenerla; el servicio sigue solo si la burbuja lo necesita. */
+  fun soltarActiva(ctx: Context) {
+    val app = ctx.applicationContext
+    BurbujaServicio.mantener = false
+    principal.post { if (!visible) BurbujaServicio.detener(app) }
   }
 
   private fun tocada(app: Context) {
@@ -144,6 +166,36 @@ object BurbujaManager {
     } catch (e: Exception) {
       Log.w(TAG, "No se pudo abrir la app", e)
       false
+    }
+  }
+
+  private var temporizadorApertura: Runnable? = null
+
+  /**
+   * Programa la apertura de la app tras [segundos] en el hilo principal nativo de Android.
+   * A diferencia de los timers de JavaScript (que React Native congela en segundo plano),
+   * este temporizador se ejecuta garantizadamente en segundo plano mientras el servicio esté activo.
+   */
+  fun programarApertura(ctx: Context, segundos: Int) {
+    cancelarApertura()
+    if (segundos <= 0) {
+      abrirApp(ctx)
+      return
+    }
+    val app = ctx.applicationContext
+    val r = Runnable {
+      temporizadorApertura = null
+      abrirApp(app)
+    }
+    temporizadorApertura = r
+    principal.postDelayed(r, segundos * 1000L)
+  }
+
+  /** Cancela cualquier apertura diferida pendiente. */
+  fun cancelarApertura() {
+    temporizadorApertura?.let {
+      principal.removeCallbacks(it)
+      temporizadorApertura = null
     }
   }
 }
