@@ -29,6 +29,12 @@
 | Cuenta, Configuración, Vehículo, Experiencia, menú lateral | src/features/conductor/cuenta/__tests__/CuentaYMenu.test.tsx | 7 tests, en verde |
 | Recargar + Retirar (monto por defecto, logos, validación, opciones, resultado) | src/features/conductor/billetera/__tests__/RecargarRetirar.test.tsx | 12 tests, en verde |
 | RoutePolyline + useMapStyle (colores de ruta, bug iOS, mapa noche) | src/shared/components/map/__tests__/RoutePolyline.test.tsx | 5 tests, en verde |
+| Burbuja flotante: reglas (cuándo mostrar/ocultar, viaje en curso) | src/features/conductor/burbuja/__tests__/reglas.test.ts | 7 tests, en verde |
+| Burbuja flotante: useBurbujaViaje (segundo plano, volver, sin permiso, fin del viaje) | src/features/conductor/burbuja/__tests__/useBurbujaViaje.test.tsx | 5 tests, en verde |
+| Burbuja flotante: pantalla del permiso (pasos, Ajustes, activada) | src/features/conductor/burbuja/__tests__/PermisoBurbujaScreen.test.tsx | 4 tests, en verde |
+| Burbuja flotante: inicio la ofrece una sola vez | src/features/conductor/home/__tests__/ConductorHomeBurbuja.test.tsx | 4 tests, en verde |
+| Burbuja flotante: fila en Configuración | src/features/conductor/configuracion/__tests__/ConfiguracionBurbuja.test.tsx | 3 tests, en verde |
+| Burbuja flotante: código nativo (Kotlin) | modules/burbuja-flotante/android | compila con kotlinc 2.1.20 contra Android 15; sin tests en dispositivo |
 | Catálogo de componentes (solo desarrollo) | src/features/dev/__tests__/CatalogoScreen.test.tsx | 1 test (render), en verde |
 
 > Actualizar este archivo cada vez que se agregen o completen tests.

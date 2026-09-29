@@ -29,6 +29,8 @@ export type ConductorStackParamList = {
   Retirar: undefined;
   ServiciosProgramados: undefined;
   SeleccionarVehiculo: undefined;
+  /** Explica la burbuja flotante y pide el permiso (solo Android). */
+  PermisoBurbuja: undefined;
   /** Solo en desarrollo. */
   Catalogo: undefined;
 };

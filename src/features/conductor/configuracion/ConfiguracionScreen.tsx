@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ConductorStackParamList } from '@navigation/types';
 import { AppHeader, AppSectionTitle, Segmented } from '@shared/components/ui';
@@ -10,6 +11,7 @@ import { Palette } from '@theme/colors';
 import { Type } from '@theme/fonts';
 import { BorderRadius, Hit, Spacing } from '@theme/spacing';
 import appConfig from '../../../../app.json';
+import { usePermisoBurbuja } from '../burbuja/permiso';
 
 type Props = NativeStackScreenProps<ConductorStackParamList, 'Configuracion'>;
 
@@ -26,6 +28,7 @@ export function ConfiguracionScreen({ navigation }: Props) {
   const setPreference = useThemeStore((s) => s.setPreference);
   // Aun no se guarda en ningun lado: no hay backend de notificaciones
   const [avisos, setAvisos] = useState(true);
+  const burbuja = usePermisoBurbuja();
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.background }]}>
@@ -63,6 +66,34 @@ export function ConfiguracionScreen({ navigation }: Props) {
         </View>
 
 
+        {burbuja.disponible && (
+          <View>
+            <AppSectionTitle>Viaje</AppSectionTitle>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Burbuja para volver al viaje, ${burbuja.permiso ? 'activada' : 'desactivada'}`}
+              onPress={() => navigation.navigate('PermisoBurbuja')}
+              style={({ pressed }) => [
+                styles.group,
+                { backgroundColor: theme.surface, borderColor: theme.divider },
+                pressed && styles.pressed,
+              ]}
+            >
+              <View style={styles.fila}>
+                <View style={styles.flex}>
+                  <Text style={[Type.label, { color: theme.text }]}>Burbuja para volver al viaje</Text>
+                  <Text style={[Type.caption, { color: theme.textMuted }]}>
+                    {burbuja.permiso
+                      ? 'Activada: aparece al salir de la app durante un viaje'
+                      : 'Desactivada: falta el permiso para mostrarse sobre otras apps'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+              </View>
+            </Pressable>
+          </View>
+        )}
+
         {/* Acceso oculto al catalogo de componentes: solo en desarrollo, manteniendo presionada la version */}
         <Pressable
           onLongPress={__DEV__ ? () => navigation.navigate('Catalogo') : undefined}
@@ -83,6 +114,7 @@ const styles = StyleSheet.create({
   pad: { paddingHorizontal: 18, paddingTop: Spacing.xs, gap: Spacing.xl },
   hint: { marginTop: Spacing.sm },
   group: { borderRadius: BorderRadius.lg, borderWidth: 1 },
+  pressed: { opacity: 0.7 },
   fila: {
     flexDirection: 'row',
     alignItems: 'center',

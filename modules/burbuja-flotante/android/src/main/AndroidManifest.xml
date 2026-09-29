@@ -1,0 +1,19 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Dibujar la burbuja sobre otras apps (el usuario lo activa en Ajustes) -->
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+  <!-- Servicio en primer plano que mantiene viva la app mientras la burbuja esta visible -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+  <application>
+    <service
+      android:name="expo.modules.burbujaflotante.BurbujaServicio"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <!-- Android 14+: justificacion del tipo specialUse (tambien se declara en Google Play Console) -->
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Acceso directo flotante para volver al viaje en curso mientras el conductor usa otra app de navegacion" />
+    </service>
+  </application>
+</manifest>

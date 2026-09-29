@@ -15,6 +15,8 @@ import { DrawerMenu } from './DrawerMenu';
 import type { DrawerMenuItem } from './DrawerMenu';
 import { IncomingRequestOverlay } from './components/IncomingRequestOverlay';
 import { ViajeEnCursoBanner } from './components/ViajeEnCursoBanner';
+import { BurbujaFlotante } from '@modules/burbuja-flotante';
+import { marcarPermisoPreguntado, yaSePreguntoPermiso } from '../burbuja/permiso';
 import { ViajeCanceladoAviso } from './components/ViajeCanceladoAviso';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { mockConductor } from '../data/mockConductor';
@@ -97,10 +99,20 @@ export function ConductorHomeScreen() {
 
   const mapRef     = useRef<MapView>(null);
 
+  // Primera vez en Android: explicar la burbuja para volver al viaje y pedir su permiso
+  const ofrecerBurbuja = async () => {
+    if (!BurbujaFlotante.disponible || BurbujaFlotante.tienePermiso()) return;
+    if (await yaSePreguntoPermiso()) return;
+    await marcarPermisoPreguntado();
+    navigation.navigate('PermisoBurbuja');
+  };
+
   // GPS
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
+      // Despues del permiso de ubicacion, para no encimar pedidos
+      void ofrecerBurbuja();
       if (status !== 'granted') return;
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const pos: LatLng = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
