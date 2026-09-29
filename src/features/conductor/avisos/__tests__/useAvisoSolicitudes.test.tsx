@@ -22,7 +22,13 @@ jest.mock('expo-notifications', () => ({
   AndroidNotificationPriority: { MAX: 'max' },
 }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(), setItemAsync: jest.fn() }));
-const mockBurbuja = { disponible: true, tienePermiso: jest.fn(() => true), abrirApp: jest.fn(() => true) };
+const mockBurbuja = {
+  disponible: true,
+  tienePermiso: jest.fn(() => true),
+  abrirApp: jest.fn(() => true),
+  programarApertura: jest.fn(() => { mockBurbuja.abrirApp(); }),
+  cancelarApertura: jest.fn(),
+};
 jest.mock('@modules/burbuja-flotante', () => ({
   get BurbujaFlotante() { return mockBurbuja; },
 }));
@@ -110,4 +116,38 @@ describe('useAvisoSolicitudes', () => {
     act(() => { alCambiarApp?.('active'); });
     expect(mostrar).not.toHaveBeenCalled();
   });
+
+  it('al pasar a segundo plano con solicitud activa notifica y abre la app', async () => {
+    estadoApp('active');
+    render(<Prueba solicitud={s} />);
+    await act(async () => {});
+    expect(notif.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(mockBurbuja.abrirApp).not.toHaveBeenCalled();
+
+    act(() => { alCambiarApp?.('background'); });
+    await act(async () => {});
+
+    expect(notif.scheduleNotificationAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({
+          title: 'Nueva solicitud de viaje',
+          data: { tipo: 'solicitud', solicitudId: s.id },
+        }),
+      }),
+    );
+    expect(mockBurbuja.abrirApp).toHaveBeenCalled();
+  });
+
+  it('al pasar a segundo plano sin solicitud activa no hace nada', async () => {
+    estadoApp('active');
+    render(<Prueba solicitud={null} />);
+    await act(async () => {});
+
+    act(() => { alCambiarApp?.('background'); });
+    await act(async () => {});
+
+    expect(notif.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(mockBurbuja.abrirApp).not.toHaveBeenCalled();
+  });
 });
+

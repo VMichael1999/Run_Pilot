@@ -1,18 +1,25 @@
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import type { Solicitud } from '../types';
 import { formatSoles } from '@shared/utils/format';
 
 export const CANAL_SOLICITUDES = 'solicitudes';
 
-/** Mientras la app esta en pantalla no se muestran banners: la solicitud ya se ve. */
+/**
+ * Las notificaciones de solicitudes de viaje deben mostrar banner y sonar siempre
+ * que se emitan, incluso si la app se abre automáticamente al recibirlas.
+ */
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: false,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (n) => {
+    const data = n.request.content.data as { tipo?: string } | undefined;
+    const esSolicitud = data?.tipo === 'solicitud';
+    return {
+      shouldShowBanner: esSolicitud,
+      shouldShowList: esSolicitud,
+      shouldPlaySound: esSolicitud,
+      shouldSetBadge: false,
+    };
+  },
 });
 
 let canalListo: Promise<void> | null = null;
@@ -34,6 +41,8 @@ export function prepararCanal(): Promise<void> {
 /** Pide el permiso de notificaciones si aun no se decidio. @returns si esta concedido. */
 export async function pedirPermisoNotificaciones(): Promise<boolean> {
   try {
+    // Android 13+: sin un canal creado, el sistema no muestra el dialogo del permiso
+    await prepararCanal();
     const actual = await Notifications.getPermissionsAsync();
     if (actual.granted) return true;
     if (!actual.canAskAgain) return false;
@@ -52,10 +61,14 @@ export function textoAviso(s: Solicitud): { title: string; body: string } {
   };
 }
 
-/** Muestra el aviso de una solicitud. @returns el id para quitarlo despues. */
-export async function avisarSolicitud(s: Solicitud): Promise<string | null> {
+/** Muestra el aviso de una solicitud (inmediato o tras un retraso en segundos). @returns el id para quitarlo despues. */
+export async function avisarSolicitud(s: Solicitud, retrasoSegundos?: number): Promise<string | null> {
   try {
     await prepararCanal();
+    const trigger = retrasoSegundos != null && retrasoSegundos > 0
+      ? { seconds: retrasoSegundos, channelId: CANAL_SOLICITUDES }
+      : (Platform.OS === 'android' ? { channelId: CANAL_SOLICITUDES } : null);
+
     return await Notifications.scheduleNotificationAsync({
       content: {
         ...textoAviso(s),
@@ -63,7 +76,7 @@ export async function avisarSolicitud(s: Solicitud): Promise<string | null> {
         sound: 'default',
         priority: Notifications.AndroidNotificationPriority.MAX,
       },
-      trigger: Platform.OS === 'android' ? { channelId: CANAL_SOLICITUDES } : null,
+      trigger,
     });
   } catch {
     return null;

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, AppState } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -18,7 +18,7 @@ import { ViajeEnCursoBanner } from './components/ViajeEnCursoBanner';
 import { BurbujaFlotante } from '@modules/burbuja-flotante';
 import { marcarPermisoPreguntado, yaSePreguntoPermiso } from '../burbuja/permiso';
 import { useAvisoSolicitudes } from '../avisos/useAvisoSolicitudes';
-import { pedirPermisoNotificaciones, prepararCanal } from '../avisos/notificaciones';
+import { pedirPermisoNotificaciones } from '../avisos/notificaciones';
 import { ViajeCanceladoAviso } from './components/ViajeCanceladoAviso';
 import { mockSolicitudes } from '../data/mockSolicitudes';
 import { mockConductor } from '../data/mockConductor';
@@ -142,6 +142,18 @@ export function ConductorHomeScreen() {
     return () => { if (simTimer.current) clearTimeout(simTimer.current); };
   }, [isOnline, hayViaje]);
 
+  // En segundo plano: como React Native congela los setTimeout en segundo plano,
+  // al minimizar la app se programa la solicitud para disparar el aviso nativo y auto-apertura.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (estado) => {
+      if (estado !== 'active' && isOnline && !hayViaje && !solicitudActiva) {
+        const pos = driverPos.current ?? { latitude: LIMA_REGION.latitude, longitude: LIMA_REGION.longitude };
+        setSolicitudActiva(crearSolicitudSimulada(pos));
+      }
+    });
+    return () => sub.remove();
+  }, [isOnline, hayViaje, solicitudActiva]);
+
   // En otra app: notificacion y, si el conductor lo eligio, la app se abre con la solicitud
   useAvisoSolicitudes(solicitudActiva, () => navigation.navigate('ConductorHome'));
 
@@ -168,7 +180,7 @@ export function ConductorHomeScreen() {
     if (toggling) return;
     setToggling(true);
     // Al conectarse: permiso para avisar solicitudes cuando este en otra app
-    if (!isOnline) void pedirPermisoNotificaciones().then((ok) => { if (ok) void prepararCanal(); });
+    if (!isOnline) void pedirPermisoNotificaciones();
     setTimeout(() => {
       setOnline(!isOnline);
       setToggling(false);
