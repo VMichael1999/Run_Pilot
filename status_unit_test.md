@@ -34,7 +34,7 @@
 | Burbuja flotante: pantalla del permiso (pasos, Ajustes, activada) | src/features/conductor/burbuja/__tests__/PermisoBurbujaScreen.test.tsx | 4 tests, en verde |
 | Burbuja flotante: inicio la ofrece una sola vez | src/features/conductor/home/__tests__/ConductorHomeBurbuja.test.tsx | 4 tests, en verde |
 | Burbuja flotante: fila en Configuración | src/features/conductor/configuracion/__tests__/ConfiguracionBurbuja.test.tsx | 3 tests, en verde |
-| Burbuja flotante: código nativo (Kotlin) | modules/burbuja-flotante/android | compila con kotlinc 2.1.20 contra Android 15; sin tests en dispositivo |
+| Burbuja flotante: código nativo (Kotlin, Robolectric: permiso, overlay, no sale sobre la app, tocar, arrastrar, X, borde, servicio) | modules/burbuja-flotante/android/src/test/.../BurbujaRoboTest.kt | 10 tests, en verde (Robolectric 4.14.1, Android 15); sin probar en dispositivo |
 | Catálogo de componentes (solo desarrollo) | src/features/dev/__tests__/CatalogoScreen.test.tsx | 1 test (render), en verde |
 
 > Actualizar este archivo cada vez que se agregen o completen tests.
