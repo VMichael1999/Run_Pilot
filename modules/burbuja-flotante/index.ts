@@ -32,8 +32,12 @@ declare class BurbujaFlotanteNativo extends NativeModule<Eventos> {
   tienePermiso(): boolean;
   abrirAjustesPermiso(): void;
   mostrar(opciones: OpcionesBurbuja): boolean;
+  mantenerActiva(opciones: OpcionesBurbuja): void;
+  soltarActiva(): void;
   ocultar(): void;
   abrirApp(): boolean;
+  programarApertura(segundos: number): void;
+  cancelarApertura(): void;
   estaVisible(): boolean;
 }
 
@@ -63,6 +67,15 @@ export const BurbujaFlotante = {
 
   ocultar: (): void => nativo?.ocultar(),
 
+  /**
+   * Mantiene la app viva en segundo plano (servicio en primer plano) sin burbuja ni permiso.
+   * Llamar con la app en pantalla. Usa `tituloNotificacion` / `textoNotificacion`.
+   */
+  mantenerActiva: (opciones: OpcionesBurbuja = {}): void => nativo?.mantenerActiva?.(opciones),
+
+  /** Deja de mantenerla viva (p. ej. al desconectarse). */
+  soltarActiva: (): void => nativo?.soltarActiva?.(),
+
   estaVisible: (): boolean => nativo?.estaVisible() ?? false,
 
   /**
@@ -70,6 +83,15 @@ export const BurbujaFlotante = {
    * Requiere el mismo permiso que la burbuja. @returns false si no se pudo.
    */
   abrirApp: (): boolean => nativo?.abrirApp() ?? false,
+
+  /**
+   * Programa la apertura automática de la app tras N segundos usando un temporizador nativo.
+   * Funciona incluso si React Native está pausado en segundo plano.
+   */
+  programarApertura: (segundos: number): void => nativo?.programarApertura?.(segundos),
+
+  /** Cancela cualquier apertura diferida programada previamente. */
+  cancelarApertura: (): void => nativo?.cancelarApertura?.(),
 
   alTocar: (cb: () => void) => nativo?.addListener('onTocar', cb) ?? sinSuscripcion,
 

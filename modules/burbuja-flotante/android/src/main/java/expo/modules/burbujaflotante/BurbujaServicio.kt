@@ -39,7 +39,7 @@ class BurbujaServicio : Service() {
     iniciando = false
     // Si la burbuja se oculto mientras el servicio arrancaba, se detiene recien ahora:
     // detenerlo antes de startForeground cierra la app en varias versiones de Android.
-    if (!enPrimerPlano || !BurbujaManager.visible) stopSelf()
+    if (!enPrimerPlano || (!BurbujaManager.visible && !mantener)) stopSelf()
     return START_NOT_STICKY
   }
 
@@ -97,6 +97,12 @@ class BurbujaServicio : Service() {
     private var iniciando = false
     private var enPrimerPlano = false
 
+    /**
+     * true mientras el conductor esta conectado: el servicio vive aunque no haya burbuja
+     * (cerrarla o no tener su permiso no debe dejar la app sin recibir solicitudes).
+     */
+    @Volatile var mantener = false
+
     fun iniciar(ctx: Context, opciones: BurbujaOpciones) {
       val intent = Intent(ctx, BurbujaServicio::class.java)
         .putExtra(EXTRA_TITULO, opciones.tituloNotificacion)
@@ -114,6 +120,7 @@ class BurbujaServicio : Service() {
     }
 
     fun detener(ctx: Context) {
+      if (mantener) return
       // Aun arrancando: onStartCommand vera la burbuja oculta y se detendra solo
       if (iniciando) return
       if (enPrimerPlano) ctx.stopService(Intent(ctx, BurbujaServicio::class.java))

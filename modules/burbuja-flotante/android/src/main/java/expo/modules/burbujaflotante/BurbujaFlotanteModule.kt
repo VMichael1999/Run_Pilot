@@ -38,12 +38,28 @@ class BurbujaFlotanteModule : Module() {
       BurbujaManager.mostrar(contexto, BurbujaOpciones.desdeMapa(opciones))
     }
 
+    Function("mantenerActiva") { opciones: Map<String, Any?> ->
+      BurbujaManager.mantenerActiva(contexto, BurbujaOpciones.desdeMapa(opciones))
+    }
+
+    Function("soltarActiva") {
+      BurbujaManager.soltarActiva(contexto)
+    }
+
     Function("ocultar") {
       BurbujaManager.ocultar(contexto)
     }
 
     Function("abrirApp") {
       BurbujaManager.abrirApp(contexto)
+    }
+
+    Function("programarApertura") { segundos: Int ->
+      BurbujaManager.programarApertura(contexto, segundos)
+    }
+
+    Function("cancelarApertura") {
+      BurbujaManager.cancelarApertura()
     }
 
     Function("estaVisible") {

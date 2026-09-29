@@ -219,6 +219,30 @@ class BurbujaRoboTest {
   }
 
   @Test
+  fun servicioMantenidoNoSeDetieneSinBurbuja() {
+    BurbujaServicio.mantener = true
+    try {
+      BurbujaManager.ocultar(app)
+      avanzar()
+      val servicio = Robolectric.buildService(BurbujaServicio::class.java, Intent(app, BurbujaServicio::class.java))
+        .create().startCommand(0, 1).get()
+      assertNotNull(shadowOf(servicio).lastForegroundNotification)
+      assertFalse("vive sin burbuja mientras este conectado", shadowOf(servicio).isStoppedBySelf)
+    } finally {
+      BurbujaServicio.mantener = false
+    }
+  }
+
+  @Test
+  fun conServicioEnPrimerPlanoYAppMinimizadaSeMuestra() {
+    importancia(ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE)
+    assertTrue(BurbujaManager.mostrar(app, BurbujaOpciones()))
+    avanzar()
+    assertEquals(1, vistas().size)
+    assertTrue(BurbujaManager.visible)
+  }
+
+  @Test
   fun abrirAppConPermisoTraeLaAppAlFrente() {
     assertTrue(BurbujaManager.abrirApp(app))
     val abierta = shadowOf(app).nextStartedActivity
@@ -230,6 +254,26 @@ class BurbujaRoboTest {
   fun abrirAppSinPermisoNoHaceNada() {
     ShadowSettings.setCanDrawOverlays(false)
     assertFalse(BurbujaManager.abrirApp(app))
+    assertEquals(null, shadowOf(app).nextStartedActivity)
+  }
+
+  @Test
+  fun programarAperturaAbreLaAppTrasElTiempo() {
+    BurbujaManager.programarApertura(app, 3)
+    avanzar(1000)
+    assertEquals(null, shadowOf(app).nextStartedActivity)
+    avanzar(2000)
+    val abierta = shadowOf(app).nextStartedActivity
+    assertNotNull(abierta)
+    assertEquals("MainActivity", abierta.component?.className)
+  }
+
+  @Test
+  fun cancelarAperturaEvitaQueSeAbra() {
+    BurbujaManager.programarApertura(app, 3)
+    avanzar(1000)
+    BurbujaManager.cancelarApertura()
+    avanzar(3000)
     assertEquals(null, shadowOf(app).nextStartedActivity)
   }
 }
