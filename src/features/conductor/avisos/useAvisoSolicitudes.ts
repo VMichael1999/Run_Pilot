@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
+import { AppState, type AppStateStatus } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import type { Solicitud } from '../types';
 import { BurbujaFlotante } from '@modules/burbuja-flotante';
@@ -23,24 +23,42 @@ export function useAvisoSolicitudes(solicitud: Solicitud | null, mostrar: () => 
   mostrarRef.current = mostrar;
   const idAviso = useRef<string | null>(null);
 
-  // Cada solicitud nueva; al aceptarse, rechazarse o expirar se quita su aviso
-  useEffect(() => {
-    if (!solicitud) return;
+  const procesarReaccion = (sol: Solicitud, estado: AppStateStatus, retrasoSegundos = 0) => {
     const r = reaccionSolicitud({
-      estadoApp: AppState.currentState,
+      estadoApp: estado,
       ...prefs.current,
       puedeAbrir: BurbujaFlotante.disponible && BurbujaFlotante.tienePermiso(),
     });
-    let resuelta = false;
-    if (r.notificar) {
-      void avisarSolicitud(solicitud).then((id) => {
-        if (resuelta) void quitarAviso(id);
-        else idAviso.current = id;
+    if (r.notificar && !idAviso.current) {
+      void avisarSolicitud(sol, retrasoSegundos).then((id) => {
+        if (!pendiente.current) {
+          void quitarAviso(id);
+        } else {
+          idAviso.current = id;
+        }
       });
     }
-    if (r.abrir) BurbujaFlotante.abrirApp();
+    if (r.abrir) {
+      if (retrasoSegundos > 0) {
+        BurbujaFlotante.programarApertura?.(retrasoSegundos);
+      } else {
+        BurbujaFlotante.abrirApp();
+      }
+    }
+  };
+
+  // Cada solicitud nueva; al aceptarse, rechazarse o expirar se quita su aviso
+  useEffect(() => {
+    if (!solicitud) {
+      BurbujaFlotante.cancelarApertura?.();
+      void quitarAviso(idAviso.current);
+      idAviso.current = null;
+      return;
+    }
+    const esSegundoPlano = AppState.currentState !== 'active';
+    procesarReaccion(solicitud, AppState.currentState, esSegundoPlano ? 4 : 0);
     return () => {
-      resuelta = true;
+      BurbujaFlotante.cancelarApertura?.();
       void quitarAviso(idAviso.current);
       idAviso.current = null;
     };
@@ -52,16 +70,26 @@ export function useAvisoSolicitudes(solicitud: Solicitud | null, mostrar: () => 
       const data = resp.notification.request.content.data as { tipo?: string } | undefined;
       if (data?.tipo === 'solicitud') mostrarRef.current();
     });
-    // Volver a la app (sola o por cualquier camino) con una solicitud pendiente
-    const alVolver = AppState.addEventListener('change', (estado) => {
-      if (estado !== 'active' || !pendiente.current) return;
-      void quitarAviso(idAviso.current);
-      idAviso.current = null;
-      mostrarRef.current();
+
+    // Cambios de estado de la app:
+    // - Al pasar a segundo plano con solicitud pendiente: avisar y/o abrir la app
+    // - Al volver a primer plano con solicitud pendiente: quitar aviso y asegurar vista
+    const alCambiarEstado = AppState.addEventListener('change', (estado) => {
+      if (!pendiente.current) return;
+
+      if (estado === 'active') {
+        BurbujaFlotante.cancelarApertura?.();
+        void quitarAviso(idAviso.current);
+        idAviso.current = null;
+        mostrarRef.current();
+      } else {
+        procesarReaccion(pendiente.current, estado);
+      }
     });
+
     return () => {
       alTocar.remove();
-      alVolver.remove();
+      alCambiarEstado.remove();
     };
   }, []);
 }
