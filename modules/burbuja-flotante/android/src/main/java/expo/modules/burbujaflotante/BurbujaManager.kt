@@ -1,5 +1,6 @@
 package expo.modules.burbujaflotante
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Punto unico para mostrar y ocultar la burbuja. Se puede llamar desde cualquier hilo:
@@ -27,8 +29,13 @@ object BurbujaManager {
   @Volatile var visible = false
     private set
 
+  private const val ESPERA_MS = 250L
+  private const val MAX_INTENTOS = 6
+
   private val principal = Handler(Looper.getMainLooper())
   private var vista: BurbujaVista? = null
+  /** Cada mostrar/ocultar invalida los reintentos pendientes del pedido anterior. */
+  private val ultimoPedido = AtomicInteger(0)
 
   fun tienePermiso(ctx: Context): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(ctx)
@@ -53,27 +60,56 @@ object BurbujaManager {
     val app = ctx.applicationContext
     if (!tienePermiso(app)) return false
     visible = true
-    principal.post {
-      if (!visible || vista != null) return@post
-      val nueva = BurbujaVista(app, opciones, alTocar = { tocada(app) }, alCerrar = { cerradaPorUsuario(app) })
-      try {
-        nueva.agregar()
-      } catch (e: Exception) {
-        Log.w(TAG, "No se pudo mostrar la burbuja", e)
-        visible = false
-        return@post
-      }
-      vista = nueva
-      // Despues de que la burbuja es visible: Android 15 solo deja iniciar el servicio
-      // desde segundo plano si la app ya tiene una ventana superpuesta visible.
-      BurbujaServicio.iniciar(app, opciones)
-    }
+    val pedido = ultimoPedido.incrementAndGet()
+    principal.post { intentarMostrar(app, opciones, pedido, intentos = 0) }
     return true
+  }
+
+  /**
+   * React Native avisa "background" en cuanto la actividad se pausa, y eso tambien pasa con un
+   * dialogo del sistema encima de la app. La burbuja solo se muestra cuando la app ya no esta
+   * visible; si tras ~1.5 s sigue visible (dialogo), no se muestra.
+   */
+  private fun intentarMostrar(app: Context, opciones: BurbujaOpciones, pedido: Int, intentos: Int) {
+    if (!visible || pedido != ultimoPedido.get() || vista != null) return
+    if (appVisible()) {
+      if (intentos < MAX_INTENTOS) {
+        principal.postDelayed({ intentarMostrar(app, opciones, pedido, intentos + 1) }, ESPERA_MS)
+      } else {
+        visible = false
+      }
+      return
+    }
+    lateinit var nueva: BurbujaVista
+    nueva = BurbujaVista(
+      app,
+      opciones,
+      alTocar = { tocada(app) },
+      alCerrar = { cerradaPorUsuario(app) },
+      // Android 15 solo deja iniciar el servicio desde segundo plano con la ventana ya visible
+      alHacerseVisible = { if (vista === nueva && visible) BurbujaServicio.iniciar(app, opciones) },
+    )
+    try {
+      nueva.agregar()
+    } catch (e: Exception) {
+      Log.w(TAG, "No se pudo mostrar la burbuja", e)
+      visible = false
+      return
+    }
+    vista = nueva
+  }
+
+  /** true si alguna actividad de la app sigue en pantalla (aunque este pausada). */
+  private fun appVisible(): Boolean {
+    val estado = ActivityManager.RunningAppProcessInfo()
+    ActivityManager.getMyMemoryState(estado)
+    return estado.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
   }
 
   fun ocultar(ctx: Context) {
     val app = ctx.applicationContext
     visible = false
+    ultimoPedido.incrementAndGet()
     principal.post {
       vista?.quitar()
       vista = null

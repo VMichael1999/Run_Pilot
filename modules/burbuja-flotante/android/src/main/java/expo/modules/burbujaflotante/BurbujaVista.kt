@@ -3,6 +3,7 @@ package expo.modules.burbujaflotante
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Point
@@ -39,6 +40,8 @@ internal class BurbujaVista(
   private val op: BurbujaOpciones,
   private val alTocar: () -> Unit,
   private val alCerrar: () -> Unit,
+  /** Una sola vez, cuando la ventana de la burbuja ya es visible (requisito de Android 15). */
+  private val alHacerseVisible: () -> Unit,
 ) {
   private val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
   private val densidad = ctx.resources.displayMetrics.density
@@ -70,7 +73,26 @@ internal class BurbujaVista(
     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
   }
 
-  private val contenedor = FrameLayout(ctx).apply {
+  private var avisoVisible = false
+
+  /** FrameLayout que avisa cuando su ventana se ve y cuando gira la pantalla. */
+  private inner class Contenedor : FrameLayout(ctx) {
+    override fun onWindowVisibilityChanged(visibility: Int) {
+      super.onWindowVisibilityChanged(visibility)
+      if (visibility == View.VISIBLE && !avisoVisible) {
+        avisoVisible = true
+        alHacerseVisible()
+      }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration?) {
+      super.onConfigurationChanged(newConfig)
+      // Nueva orientacion o tamano: volver a dejarla dentro de la pantalla
+      post { if (agregada) asentar() }
+    }
+  }
+
+  private val contenedor = Contenedor().apply {
     clipToPadding = false
     setPadding(margen, margen, margen, margen)
     addView(burbuja, FrameLayout.LayoutParams(diametro, diametro))
@@ -302,7 +324,9 @@ internal class BurbujaVista(
         .takeIf { it != 0 } ?: res.getIdentifier(nombre, "mipmap", ctx.packageName)
       if (id != 0) runCatching { return ctx.getDrawable(id)!! }
     }
-    return ctx.packageManager.getApplicationIcon(ctx.packageName)
+    // Respaldo: sin icono de la app (raro) se usa el generico del sistema, nunca se cae
+    return runCatching { ctx.packageManager.getApplicationIcon(ctx.packageName) as Drawable? }.getOrNull()
+      ?: ctx.getDrawable(android.R.drawable.sym_def_app_icon)!!
   }
 
   private fun nombreApp(): String = ctx.packageManager.getApplicationLabel(ctx.applicationInfo).toString()
