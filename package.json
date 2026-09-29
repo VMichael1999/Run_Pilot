@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
+    "start": "expo start --port 8082",
+    "android": "expo start --android --port 8082",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
