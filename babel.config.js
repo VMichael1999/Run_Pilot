@@ -18,6 +18,7 @@ module.exports = function (api) {
             '@assets': './assets',
             '@data': './src/data',
             '@config': './src/config',
+            '@modules': './modules',
           },
         },
       ],

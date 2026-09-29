@@ -18,10 +18,15 @@ import { RetirarScreen } from '@features/conductor/billetera/RetirarScreen';
 import { ServiciosProgramadosScreen } from '@features/conductor/servicios-programados/ServiciosProgramadosScreen';
 import { SeleccionarVehiculoScreen } from '@features/conductor/vehiculo/SeleccionarVehiculoScreen';
 import { CatalogoScreen } from '@features/dev/CatalogoScreen';
+import { PermisoBurbujaScreen } from '@features/conductor/burbuja/PermisoBurbujaScreen';
+import { useBurbujaViaje } from '@features/conductor/burbuja/useBurbujaViaje';
 
 const Stack = createNativeStackNavigator<ConductorStackParamList>();
 
 export function ConductorNavigator() {
+  // Burbuja para volver al viaje cuando la app pasa a segundo plano (Android)
+  useBurbujaViaje();
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ConductorHome"        component={ConductorHomeScreen} />
@@ -40,6 +45,7 @@ export function ConductorNavigator() {
       <Stack.Screen name="Retirar"              component={RetirarScreen} />
       <Stack.Screen name="ServiciosProgramados" component={ServiciosProgramadosScreen} />
       <Stack.Screen name="SeleccionarVehiculo"  component={SeleccionarVehiculoScreen} />
+      <Stack.Screen name="PermisoBurbuja"       component={PermisoBurbujaScreen} />
       {__DEV__ && <Stack.Screen name="Catalogo" component={CatalogoScreen} />}
     </Stack.Navigator>
   );
