@@ -114,30 +114,43 @@ export function DrawerMenu({ visible, onClose, items, perfil, onPerfil }: Props)
           accessibilityRole="button"
           accessibilityLabel={`${perfil.nombre} ${perfil.apellido}, ${perfil.calificacion} estrellas, ${perfil.viajes}. Vehículo ${perfil.vehiculo}, placa ${perfil.placa}. Ver cuenta`}
           onPress={onPerfil}
-          style={({ pressed }) => [styles.prof, { backgroundColor: theme.background }, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.prof,
+            { backgroundColor: theme.background, borderColor: theme.divider },
+            pressed && styles.pressed,
+          ]}
         >
-          <View style={styles.row}>
+          {/* Fila 1: Conductor */}
+          <View style={styles.driverRow}>
             <View style={[styles.av, { backgroundColor: theme.signal }]}>
               <Text style={[styles.avText, { color: theme.onSignal }]}>
                 {perfil.nombre.charAt(0)}{perfil.apellido.charAt(0)}
               </Text>
             </View>
-            <View style={styles.flex}>
-              <Text style={[Type.name, { color: theme.text }]}>{perfil.nombre} {perfil.apellido}</Text>
+            <View style={styles.driverInfo}>
+              <Text style={[Type.name, { color: theme.text }]} numberOfLines={1}>
+                {perfil.nombre} {perfil.apellido}
+              </Text>
               <View style={styles.rating}>
-                <Ionicons name="star" size={12} color={theme.textMuted} />
+                <Ionicons name="star" size={12} color={theme.signal} />
                 <Text style={[Type.detail, { color: theme.textMuted }]}>
                   {perfil.calificacion.toFixed(2)} · {perfil.viajes}
                 </Text>
               </View>
             </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
           </View>
-          <View style={styles.row}>
-            <Plate placa={perfil.placa} />
-            <View>
-              <Text style={[styles.veh, { color: theme.text }]}>{perfil.vehiculo}</Text>
+
+          {/* Separador sutil */}
+          <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+
+          {/* Fila 2: Vehículo + Placa */}
+          <View style={styles.vehRow}>
+            <View style={styles.vehInfo}>
+              <Text style={[styles.veh, { color: theme.text }]} numberOfLines={1}>{perfil.vehiculo}</Text>
               <Text style={[Type.detail, { color: theme.textMuted }]}>{perfil.vehiculoDetalle}</Text>
             </View>
+            <Plate placa={perfil.placa} />
           </View>
         </Pressable>
 
@@ -171,12 +184,21 @@ const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2, paddingHorizontal: Spacing.xs },
   logo: { width: 40, height: 40, borderRadius: 10 },
   brandText: { ...Type.kpi, letterSpacing: -0.2 },
-  prof: { padding: Spacing.md, borderRadius: BorderRadius.lg, gap: Spacing.sm + 2 },
+  prof: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
   pressed: { opacity: 0.7 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
-  av: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  // Medida propia del avatar de 40 dp
-  avText: { fontWeight: Weight.bold, fontSize: 14 },
+  driverRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm + 2 },
+  driverInfo: { flex: 1, gap: 2 },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
+  vehRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
+  vehInfo: { flex: 1, gap: 1 },
+  av: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  // Medida propia del avatar de 42 dp
+  avText: { fontWeight: Weight.bold, fontSize: 15 },
   rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   veh: { ...Type.smallStrong },
   menu: { paddingBottom: Spacing.sm },
