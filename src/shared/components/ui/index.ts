@@ -24,3 +24,5 @@ export { Price } from './Price';
 export { AmountField, limpiarMonto } from './AmountField';
 export { OptionRow } from './OptionRow';
 export { LogosPago } from './logosPago';
+export { OTPAnimatedField } from './OTPAnimatedField';
+export type { OTPAnimatedFieldProps, OTPStatus } from './OTPAnimatedField';
