@@ -58,7 +58,9 @@ describe('LoginVerificacionScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Borrar' }));
     expect(screen.getByLabelText('Código de verificación, 2 de 4 dígitos')).toBeTruthy();
     for (const d of ['1', '7']) fireEvent.press(screen.getByRole('button', { name: d }));
-    await act(async () => {});
+    // Verificación (1.6 s) + éxito (1.3 s) antes de autenticar
+    await act(async () => { jest.advanceTimersByTime(1600); });
+    await act(async () => { jest.advanceTimersByTime(1300); });
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
   });
 

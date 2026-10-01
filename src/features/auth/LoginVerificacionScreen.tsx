@@ -52,23 +52,6 @@ export function LoginVerificacionScreen({ route, navigation }: LoginVerificacion
     setStatus('verifying');
     setError('');
 
-    // En testing con Jest, autenticar inmediatamente para compatibilidad con fake timers
-    if (typeof jest !== 'undefined') {
-      try {
-        if (code === '0000') {
-          throw new Error('Código inválido');
-        }
-        setAuthenticated('mock-token');
-      } catch {
-        setStatus('error');
-        setError('Código incorrecto. Revisa el SMS e inténtalo de nuevo.');
-        setCode('');
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
     try {
       if (code === '0000') {
         // 1. Fase de Verificación Orbital (mínimo 1.6s)
