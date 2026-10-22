@@ -11,6 +11,10 @@ describe('avisos · que hacer al llegar una solicitud', () => {
     expect(reaccionSolicitud({ ...base, estadoApp: 'active' })).toEqual({ notificar: false, abrir: false });
   });
 
+  it("iOS 'inactive' (Centro de control, dialogos) cuenta como en pantalla", () => {
+    expect(reaccionSolicitud({ ...base, estadoApp: 'inactive' })).toEqual({ notificar: false, abrir: false });
+  });
+
   it('en otra app: notifica y abre', () => {
     expect(reaccionSolicitud({ ...base, estadoApp: 'background' })).toEqual({ notificar: true, abrir: true });
   });

@@ -146,7 +146,7 @@ export function ConductorHomeScreen() {
   // al minimizar la app se programa la solicitud para disparar el aviso nativo y auto-apertura.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (estado) => {
-      if (estado !== 'active' && isOnline && !hayViaje && !solicitudActiva) {
+      if (estado === 'background' && isOnline && !hayViaje && !solicitudActiva) {
         const pos = driverPos.current ?? { latitude: LIMA_REGION.latitude, longitude: LIMA_REGION.longitude };
         setSolicitudActiva(crearSolicitudSimulada(pos));
       }

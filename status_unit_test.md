@@ -31,8 +31,8 @@
 | RoutePolyline + useMapStyle (colores de ruta, bug iOS, mapa noche) | src/shared/components/map/__tests__/RoutePolyline.test.tsx | 5 tests, en verde |
 | Burbuja flotante: reglas (cuándo mostrar/ocultar, viaje en curso) | src/features/conductor/burbuja/__tests__/reglas.test.ts | 7 tests, en verde |
 | Burbuja flotante: useBurbujaConductor (conectado o en viaje, volver, sin permiso, desconectarse) | src/features/conductor/burbuja/__tests__/useBurbujaConductor.test.tsx | 6 tests, en verde |
-| Avisos de solicitudes: reglas (notificar/abrir) y texto | src/features/conductor/avisos/__tests__/reglas.test.ts | 6 tests, en verde |
-| Avisos de solicitudes: useAvisoSolicitudes (notificar, abrir, quitar aviso, tocar, volver) | src/features/conductor/avisos/__tests__/useAvisoSolicitudes.test.tsx | 8 tests, en verde |
+| Avisos de solicitudes: reglas (notificar/abrir, 'inactive' de iOS) y texto | src/features/conductor/avisos/__tests__/reglas.test.ts | 7 tests, en verde |
+| Avisos de solicitudes: useAvisoSolicitudes (notificar, abrir, quitar aviso programado, id tardío, no reabrir al salir, 'inactive' de iOS, tocar, volver) | src/features/conductor/avisos/__tests__/useAvisoSolicitudes.test.tsx | 16 tests, en verde |
 | Preferencias (switches guardados) | src/store/__tests__/usePreferenciasStore.test.ts | 4 tests, en verde |
 | Burbuja flotante: pantalla del permiso (pasos, Ajustes, activada) | src/features/conductor/burbuja/__tests__/PermisoBurbujaScreen.test.tsx | 4 tests, en verde |
 | Burbuja flotante: inicio la ofrece una sola vez | src/features/conductor/home/__tests__/ConductorHomeBurbuja.test.tsx | 4 tests, en verde |
