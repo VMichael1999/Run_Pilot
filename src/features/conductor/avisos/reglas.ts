@@ -10,6 +10,7 @@ export interface ReaccionSolicitud {
 /**
  * Que hacer cuando llega una solicitud:
  * - con la app en pantalla: nada extra (el conductor ya ve la solicitud)
+ * - 'inactive' (iOS: Centro de control, dialogos del sistema): igual, sigue en la app
  * - en segundo plano: notificar si tiene los avisos activados, y abrir la app si
  *   eligio "Abrir Run Pilot al recibir un viaje" y el telefono lo permite
  */
@@ -19,6 +20,6 @@ export function reaccionSolicitud(p: {
   abrirAlRecibir: boolean;
   puedeAbrir: boolean;
 }): ReaccionSolicitud {
-  if (p.estadoApp === 'active') return { notificar: false, abrir: false };
+  if (p.estadoApp !== 'background') return { notificar: false, abrir: false };
   return { notificar: p.avisos, abrir: p.abrirAlRecibir && p.puedeAbrir };
 }

@@ -83,8 +83,14 @@ export async function avisarSolicitud(s: Solicitud, retrasoSegundos?: number): P
   }
 }
 
+/** Quita el aviso: lo cancela si aun estaba programado (retraso) y lo borra si ya se veia. */
 export async function quitarAviso(id: string | null): Promise<void> {
   if (!id) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(id);
+  } catch {
+    // ya se mostro o no existia
+  }
   try {
     await Notifications.dismissNotificationAsync(id);
   } catch {
