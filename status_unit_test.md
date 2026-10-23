@@ -16,7 +16,7 @@
 | PanelPago (efectivo, digital, otro método) | src/features/conductor/viaje/__tests__/PanelPago.test.tsx | 3 tests, en verde |
 | cobro (desglose, distrito, efectivo) | src/shared/utils/__tests__/cobro.test.ts | 6 tests, en verde |
 | geo (distancia, restante, formato) | src/shared/utils/__tests__/geo.test.ts | 11 tests, en verde |
-| ViajeScreen (fases deslizables, panel del pasajero, SOS, llamar, fuga de GPS, cancelar viaje, finalizar) | src/features/conductor/viaje/__tests__/ViajeScreen.test.tsx | 19 tests, en verde |
+| ViajeScreen (fases deslizables, panel del pasajero, SOS con un toque, llamar, fuga de GPS, cancelar viaje, finalizar) | src/features/conductor/viaje/__tests__/ViajeScreen.test.tsx | 20 tests, en verde |
 | format (soles, viajes, tiempo) | src/shared/utils/__tests__/format.test.ts | 9 tests, en verde |
 | CalificarScreen (estrellas, etiquetas, enviar, omitir, desde historial) | src/features/conductor/calificar/__tests__/CalificarScreen.test.tsx | 5 tests, en verde |
 | HistorialViaje (tarjetas, cancelados, parada extra, menú) + HistorialDetalle | src/features/conductor/historial/__tests__/HistorialViajeScreen.test.tsx | 9 tests, en verde |

@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
 import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,39 +12,17 @@ import { AppButton } from './AppButton';
 /** Numero al que llama el SOS. Policia Nacional del Peru. Cambiar aqui si se decide otro destino. */
 export const SOS_TELEFONO = '105';
 
-const MANTENER_MS = 1000;
-
 /**
- * Boton de emergencia siempre visible durante el viaje. Se activa manteniendo
- * presionado 1 s para evitar falsas alarmas; un toque corto solo explica como usarlo.
+ * Boton de emergencia siempre visible durante el viaje. Un toque abre la hoja de
+ * emergencia; la llamada se confirma ahi, asi que un toque accidental no llama a nadie.
  */
 export function SosButton() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const [pista, setPista] = useState(false);
   const [abierto, setAbierto] = useState(false);
-  const reducedMotion = useReducedMotion();
-
-  // Relleno que avanza mientras se mantiene presionado: muestra cuanto falta
-  const carga = useSharedValue(0);
-  const empezarCarga = () => {
-    if (reducedMotion) return;
-    carga.value = withTiming(1, { duration: MANTENER_MS, easing: Easing.linear });
-  };
-  const soltar = () => {
-    cancelAnimation(carga);
-    carga.value = 0;
-  };
-  const cargaStyle = useAnimatedStyle(() => ({ width: `${carga.value * 100}%` }));
-
-  const mostrarPista = () => {
-    setPista(true);
-    setTimeout(() => setPista(false), 2500);
-  };
 
   const activar = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    setPista(false);
     setAbierto(true);
   };
 
@@ -61,31 +31,13 @@ export function SosButton() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Botón de emergencia"
-        accessibilityHint="Mantén presionado un segundo para pedir ayuda"
-        accessibilityActions={[{ name: 'activate' }, { name: 'longpress' }]}
-        onAccessibilityAction={(e) => {
-          if (e.nativeEvent.actionName === 'longpress' || e.nativeEvent.actionName === 'activate') activar();
-        }}
-        onPress={mostrarPista}
-        onLongPress={() => {
-          soltar();
-          activar();
-        }}
-        onPressIn={empezarCarga}
-        onPressOut={soltar}
-        delayLongPress={MANTENER_MS}
-        style={styles.pill}
+        accessibilityHint="Abre las opciones para pedir ayuda"
+        onPress={activar}
+        style={({ pressed }) => [styles.pill, pressed && styles.pillPressed]}
       >
-        <Animated.View style={[styles.carga, cargaStyle]} pointerEvents="none" />
         <Ionicons name="shield-checkmark" size={22} color={Palette.white} />
         <Text style={styles.text}>SOS</Text>
       </Pressable>
-
-      {pista && (
-        <View style={[styles.tip, { backgroundColor: theme.text }]} pointerEvents="none">
-          <Text style={[Type.caption, { color: theme.surface }]}>Mantén presionado 1 s</Text>
-        </View>
-      )}
 
       <Modal visible={abierto} transparent animationType="fade" onRequestClose={() => setAbierto(false)}>
         <Pressable style={[styles.backdrop, { backgroundColor: theme.scrim }]} onPress={() => setAbierto(false)}>
@@ -133,20 +85,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Shadow.raise,
   },
-  carga: {
-    ...StyleSheet.absoluteFillObject,
-    right: undefined,
-    backgroundColor: Palette.sosHold,
-  },
+  pillPressed: { backgroundColor: Palette.sosHold },
   text: { ...Type.field, fontWeight: Weight.bold, color: Palette.white, letterSpacing: 0.5 },
-  tip: {
-    position: 'absolute',
-    top: Hit.min + Spacing.xs,
-    right: 0,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: BorderRadius.sm,
-  },
   backdrop: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: BorderRadius.sheet,
