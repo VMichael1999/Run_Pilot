@@ -18,7 +18,7 @@ export const Palette = {
   black:     '#000000',
   // SOS: mismo rojo de dia y de noche, con texto blanco (5.6:1)
   sos:       '#C8261B',
-  sosHold:   '#8E1A12', // relleno mientras se mantiene presionado
+  sosHold:   '#8E1A12', // boton SOS mientras se pulsa
 } as const;
 
 export const ThemeColors = {

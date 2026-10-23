@@ -118,22 +118,32 @@ describe('ViajeScreen', () => {
   });
 
   describe('SOS', () => {
-    it('un toque corto solo explica como usarlo', async () => {
-      await renderEn('iniciado');
-      await act(async () => {});
-      fireEvent.press(screen.getByRole('button', { name: 'Botón de emergencia' }));
-      expect(screen.getByText('Mantén presionado 1 s')).toBeTruthy();
-      expect(screen.queryByText('Emergencia')).toBeNull();
-    });
-
-    it('mantener presionado abre la hoja y llama al 105', async () => {
+    it('un toque abre la hoja de emergencia sin llamar todavia', async () => {
       const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
       await renderEn('iniciado');
       await act(async () => {});
-      fireEvent(screen.getByRole('button', { name: 'Botón de emergencia' }), 'longPress');
+      fireEvent.press(screen.getByRole('button', { name: 'Botón de emergencia' }));
       expect(screen.getByText('Emergencia')).toBeTruthy();
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('desde la hoja se llama al 105', async () => {
+      const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+      await renderEn('iniciado');
+      await act(async () => {});
+      fireEvent.press(screen.getByRole('button', { name: 'Botón de emergencia' }));
       fireEvent.press(screen.getByRole('button', { name: 'Llamar a la Policía · 105' }));
       expect(open).toHaveBeenCalledWith('tel:105');
+    });
+
+    it('cancelar cierra la hoja sin llamar', async () => {
+      const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+      await renderEn('iniciado');
+      await act(async () => {});
+      fireEvent.press(screen.getByRole('button', { name: 'Botón de emergencia' }));
+      fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));
+      expect(screen.queryByText('Emergencia')).toBeNull();
+      expect(open).not.toHaveBeenCalled();
     });
   });
 
